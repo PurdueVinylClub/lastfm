@@ -50,3 +50,7 @@ def set_lfm_discord_connection(discord_id: int, lastfm_user: str) -> bool:
 # pass/fail
 def set_preferences(discord_id: int, preferences: dict):
     pass
+
+def get_special_roles() -> list[int]:
+    with open('special_roles.txt', 'r') as f:
+        return f.read().splitlines()
