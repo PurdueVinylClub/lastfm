@@ -8,6 +8,7 @@ import hashlib
 import datetime
 import sys
 import traceback
+import urllib3
 import socket
 
 featured_album = None
@@ -15,27 +16,23 @@ featured_artist = None
 featured_member = None
 featured_time = None
 
-def get_featured_album() -> (str, str, int):
-    pass
-
-def main() -> (bool, str):
+def main() -> tuple[dict | None, str]:
     dotenv.load_dotenv()
 
     API_KEY = os.environ.get('LASTFM_API_KEY')
     SESSION_KEY = os.environ.get('LASTFM_SESSION_KEY')
     SECRET = os.environ.get('LASTFM_SECRET')
 
-    # read members
-    
-    # if sunday only dues payers
-    # TODO (don't have db of dues payers yet)
-    with open('usernames.txt', 'r') as f:
-        members = f.read().splitlines()
-
     print_buffer = ""
 
     # as 09/10 9:45 AM
     print_buffer += time.strftime("%m/%d %I:%M %p", time.localtime()) + " "
+
+    # read members
+    # if sunday only dues payers
+    # TODO (don't have db of dues payers yet)
+    with open('usernames.txt', 'r') as f:
+        members = f.read().splitlines()
 
     # get random member
     username = random.choice(members)
@@ -50,12 +47,12 @@ def main() -> (bool, str):
     data = json.loads(response.text)
 
     if 'topalbums' not in data:
-        return False, ""
+        return None, ""
 
     top_albums = data['topalbums']['album'][0:15]
 
     if len(top_albums) == 0:
-        return False, ""
+        return None, ""
 
     # get random album
     random_album = random.choice(top_albums)
@@ -69,7 +66,7 @@ def main() -> (bool, str):
 
     # download album art
     if 'album' not in data:
-        return False, ""
+        return None, ""
 
     album_art_url = data['album']['image'][3]['#text']
 
@@ -80,7 +77,7 @@ def main() -> (bool, str):
 
     if 'tracks' in data['album']:
         if 'track' not in data['album']['tracks'] or not data['album']['tracks']['track']:
-            return False, ""
+            return None, ""
 
         time_now = int(time.time())
 
@@ -92,7 +89,7 @@ def main() -> (bool, str):
         elif random_track is str:
             track_name = random_track
         else:
-            return False, ""
+            return None, ""
 
         print_buffer += " " + track_name
         scrobble_sig += f"api_key{API_KEY}artist{random_album['artist']['name']}methodtrack.scrobblesk{SESSION_KEY}timestamp{time_now}track{track_name}"
@@ -118,16 +115,25 @@ def main() -> (bool, str):
         data = json.loads(response.text)
         print_buffer += " " + str(data)
 
-    return True, print_buffer
+    featured_album = {
+        'member_l': username,
+        'artist_name': random_album['artist']['name'],
+        'artist_url': random_album['artist']['url'],
+        'album': random_album['name'],
+        'album_url': random_album['url'],
+        'cover_url': album_art_url
+    }
+
+    return featured_album, print_buffer 
 
 if __name__ == "__main__":
     while True:
         try:
-            (success, print_buffer) = main()
-            if success:
+            (featured_album, print_buffer) = main()
+            if featured_album:
                 print(print_buffer)
                 break
-        except (ConnectionError, socket.gaierror) as e:
+        except (ConnectionError, socket.gaierror, urllib3.exceptions.NameResolutionError) as e:
             # no use continuously retrying, seems like deeper (network) issue
             print(f"{time.strftime('%m/%d %I:%M %p')} ConnectionError/socket.gaierror: {str(e)}, aborting...", file=sys.stderr)
             break
