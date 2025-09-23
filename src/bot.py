@@ -15,43 +15,36 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-class FeaturedListing:
-    def update(self, member: str, artist: str, album: str, track: str):
-        self.member = member
-        self.artist = artist
-        self.album = album
-        self.track = track
-    
-    def format_embed(self):
-        pass
-
-
 client = discord.Client(intents=intents)
+
+def start_track():
+    scheduler = BlockingScheduler()
+
+    # Run every 15 minutes, at second 30 (xx:00:30, xx:15:30, xx:30:30, xx:45:30)
+    scheduler.add_job(
+        main.main,
+        'cron',
+        minute='0,15,30,45',
+        second=30
+    )
+
+    print("Scheduler started...")
+    scheduler.start()
 
 @client.event
 async def on_ready():
     print(f'We have logged in as {client.user}')
     await client.change_presence(activity=discord.Game(name="Featuring NULL"))
 
-    # scheduler = BlockingScheduler()
+    # start_track()
 
-    # # Run every 15 minutes, at second 30 (xx:00:30, xx:15:30, xx:30:30, xx:45:30)
-    # scheduler.add_job(
-    #     fetch_recent_album,
-    #     'cron',
-    #     minute='0,15,30,45',
-    #     second=30
-    # )
+    (featured_album, print_buffer) = main.main()
+    assert featured_album is not None
 
-    #print("Scheduler started...")
-    # scheduler.start()
+    print(print_buffer)
 
-    (success, featured_album) = main.main()
-    assert success
-
-    print(featured_album)
-    # TODO
-    db.set_featured_album()
+    db.init()
+    db.set_featured_album(featured_album['member_l'], featured_album['artist_name'], featured_album['artist_url'], featured_album['album'], featured_album['album_url'], featured_album['cover_url'])
 
 @client.event
 async def on_message(message):
@@ -62,7 +55,10 @@ async def on_message(message):
         await message.channel.send('TODO')
 
     elif message.content.startswith('!featuredlog'):
-        await message.channel.send('TODO')
+        lastfm_user = db.get_lastfm_user(message.author.id)
+        featured_log = db.get_featured_log(lastfm_user)
+
+        await message.channel.send(embed=formatter.featurelog_embed(featured_log))
 
     elif message.content.startswith('!f'): # most recent featured
         album_details = db.get_featured_album()
@@ -71,29 +67,47 @@ async def on_message(message):
         await message.channel.send(embed=formatter.featured_embed(album_details))
 
     elif message.content.startswith('!settings'):
-        await message.channel.send('TODO')
+        preferences = db.get_preferences(message.author.id)
+    
+        await message.channel.send(embed=formatter.settings_embed(preferences))
 
     elif message.content.startswith('!track'):
+        preferences = db.get_preferences(message.author.id)
+
         if message.content == '!track':
-            await message.channel.send('You are not currently tracking. Run `!track on` to start tracking.')
-            await message.channel.send('You are currently tracking. Run `!track off` to stop tracking.')
+            if not preferences['track']:
+                await message.channel.send('You are not currently eligible to be featured. Run `!track on` to start tracking.')
+            else:
+                await message.channel.send('You are currently eligible to be featured. Run `!track off` to stop tracking.')
 
-        special_roles = db.get_special_roles()
+        if message.content == '!track on':
+            preferences['track'] = True
+            db.set_preferences(message.author.id, preferences)
+            await message.channel.send('You are now eligible to be featured.')
 
-        await message.channel.send('You are not currently tracking, what is your Last.fm username?')
-        response = await client.wait_for('message')
-        print(response.content)
+        if message.content == '!track off':
+            preferences['track'] = False
+            db.set_preferences(message.author.id, preferences)
+            await message.channel.send('You are no longer eligible to be featured.')
 
-        is_special = False
-
-        for role in message.author.roles:
-            if role.id in special_roles:
-                is_special = True
-                break
+        # TODO special roles stuff
     
     elif message.content.startswith('!noti'):
-        await message.channel.send('TODO')
+        preferences = db.get_preferences(message.author.id)
+        if message.content == '!notify':
+            if not preferences['notify']:
+                await message.channel.send('You are not currently notified if you are featured. Run `!notify on` to start notifying.')
+            else:
+                await message.channel.send('You are currently notified when you are featured. Run `!notify off` to stop notifying.')
 
+        if message.content == '!notify on':
+            preferences['notify'] = True
+            db.set_preferences(message.author.id, preferences)
+            await message.channel.send('You will now be notified when you are featured.')
 
+        if message.content == '!notify off':
+            preferences['notify'] = False
+            db.set_preferences(message.author.id, preferences)
+            await message.channel.send('You will no longer be notified when you are featured.')
 
 client.run(token)
