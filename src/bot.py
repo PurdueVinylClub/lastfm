@@ -56,6 +56,11 @@ async def on_message(message):
 
     elif message.content.startswith('!featuredlog'):
         lastfm_user = db.get_lastfm_user(message.author.id)
+
+        if not lastfm_user:
+            await message.channel.send('You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>` and try again.')
+            return
+
         featured_log = db.get_featured_log(lastfm_user)
 
         await message.channel.send(embed=formatter.featurelog_embed(featured_log))
@@ -77,6 +82,10 @@ async def on_message(message):
     elif message.content.startswith('!track'):
         preferences = db.get_preferences(message.author.id)
 
+        if preferences is None:
+            await message.channel.send('You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>` and try again.')
+            return
+
         if message.content == '!track':
             if not preferences['track']:
                 await message.channel.send('You are not currently eligible to be featured. Run `!track on` to start tracking.')
@@ -97,6 +106,11 @@ async def on_message(message):
     
     elif message.content.startswith('!noti'):
         preferences = db.get_preferences(message.author.id)
+
+        if preferences is None:
+            await message.channel.send('You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>` and try again.')
+            return
+
         if message.content == '!notify':
             if not preferences['notify']:
                 await message.channel.send('You are not currently notified if you are featured. Run `!notify on` to start notifying.')

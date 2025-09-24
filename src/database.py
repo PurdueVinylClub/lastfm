@@ -169,7 +169,7 @@ def get_featured_album() -> Optional[Dict]:
         'timestamp': result['featured_at']
     }
 
-def get_featured_log(lastfm_user: str) -> List[Dict]:
+def get_featured_log(lastfm_user: str) -> Optional[List[Dict]]:
     """Get featured album history for a specific user."""
     cursor = db.cursor()
     cursor.execute(
@@ -181,6 +181,9 @@ def get_featured_log(lastfm_user: str) -> List[Dict]:
     )
     results = cursor.fetchall()
     cursor.close()
+
+    if not results:
+        return None
 
     return [dict(row) for row in results]
 
