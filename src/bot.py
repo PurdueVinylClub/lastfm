@@ -62,6 +62,9 @@ async def on_message(message):
 
     elif message.content.startswith('!f'): # most recent featured
         album_details = db.get_featured_album()
+        if not album_details:
+            await message.channel.send('No featured album found.')
+            return
         
         # format album_details as embed
         await message.channel.send(embed=formatter.featured_embed(album_details))

@@ -50,7 +50,7 @@ def init():
             cover_url TEXT,
             featured_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_current BOOLEAN DEFAULT 0,
-            FOREIGN KEY (user_id) REFERENCES users (lastfm_username) ON DELETE CASCADE
+            FOREIGN KEY (lastfm_username) REFERENCES users (lastfm_username) ON DELETE CASCADE
         )""",
     ]
 
@@ -148,27 +148,26 @@ def get_featured_album() -> Optional[Dict]:
     """Get the current featured album."""
     cursor = db.cursor()
     cursor.execute(
-        """SELECT fa.*, u.discord_id, u.lastfm_username
+        """SELECT fa.*
            FROM featured_albums fa
-           JOIN users u ON fa.lastfm_username = u.lastfm_username
            WHERE fa.is_current = 1
-           LIMIT 1"""
+           ORDER BY fa.featured_at DESC"""
     )
     result = cursor.fetchone()
     cursor.close()
 
-    if result:
-        return {
-            'member_d': result['discord_id'],
-            'member_l': result['lastfm_username'],
-            'artist_name': result['artist_name'],
-            'artist_url': result['artist_url'],
-            'album': result['album_name'],
-            'album_url': result['album_url'],
-            'cover_url': result['cover_url'],
-            'timestamp': result['featured_at']
-        }
-    return None
+    if not result:
+        return None
+
+    return {
+        'member_l': result['lastfm_username'],
+        'artist_name': result['artist_name'],
+        'artist_url': result['artist_url'],
+        'album': result['album_name'],
+        'album_url': result['album_url'],
+        'cover_url': result['cover_url'],
+        'timestamp': result['featured_at']
+    }
 
 def get_featured_log(lastfm_user: str) -> List[Dict]:
     """Get featured album history for a specific user."""

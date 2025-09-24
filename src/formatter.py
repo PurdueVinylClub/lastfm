@@ -11,3 +11,6 @@ def featured_embed(album_details: dict) -> discord.Embed:
 
 def featurelog_embed(featured_log: list) -> discord.Embed:
     pass
+
+def settings_embed(preferences: dict) -> discord.Embed:
+    pass
