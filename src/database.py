@@ -78,18 +78,34 @@ def create_user(discord_id: int, lastfm_username: str) -> bool:
             "INSERT INTO users (discord_id, lastfm_username) VALUES (?, ?)",
             (discord_id, lastfm_username)
         )
-
-        # Create default preferences entry using discord_id as foreign key
+    
         cursor.execute(
-            "INSERT INTO user_preferences (user_id) VALUES (?)",
+            "INSERT OR IGNORE INTO user_preferences (user_id) VALUES (?)",
             (discord_id,)
         )
 
         db.commit()
         cursor.close()
+
         return True
     except sqlite3.IntegrityError:
         return False  # User already exists
+
+    
+def delete_user(discord_id: int) -> bool:
+    """Delete a user."""
+    try:
+        cursor = db.cursor()
+        cursor.execute(
+            "DELETE FROM users WHERE discord_id = ?",
+            (discord_id,)
+        )
+        db.commit()
+        cursor.close()
+        return True
+    except Exception as e:
+        print(f"Error deleting user: {e}")
+        return False
 
 def get_lastfm_user(discord_id: int) -> Optional[str]:
     """Get Last.fm username by Discord ID."""

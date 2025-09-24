@@ -55,10 +55,14 @@ async def on_message(message):
         if db.get_lastfm_user(message.author.id):
             await message.channel.send('You are already connected to a Last.fm account. Please disconnect your account with `!disconnect` and try again.')
             return
+        
+        if len(message.content.split(' ')) < 2:
+            await message.channel.send('Please provide a Last.fm username. Usage: `!connect <lastfm_username>`')
+            return
 
         lastfm_user = message.content.split(' ')[1]
         if db.set_lfm_discord_connection(message.author.id, lastfm_user):
-            await message.channel.send('Connected to Last.fm account.')
+            await message.channel.send('Connected to Last.fm account: ' + lastfm_user + '.')
         else:
             await message.channel.send('Failed to connect to Last.fm account. Please ping Avery and try again later.')
 
@@ -67,8 +71,10 @@ async def on_message(message):
             await message.channel.send('You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>`') 
             return
 
-        db.delete_user(message.author.id)
-        await message.channel.send('Disconnected from Last.fm account.')
+        if db.delete_user(message.author.id):
+            await message.channel.send('Disconnected from Last.fm account.')
+        else:
+            await message.channel.send('Failed to disconnect from Last.fm account. Please ping Avery and try again later.')
 
     elif message.content.startswith('!help'):
         await message.channel.send('TODO')
