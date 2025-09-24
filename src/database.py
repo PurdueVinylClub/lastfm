@@ -37,6 +37,7 @@ def init():
             user_id INTEGER PRIMARY KEY,
             track BOOLEAN DEFAULT 1,
             notify BOOLEAN DEFAULT 0,
+            double_track BOOLEAN DEFAULT 0,
             FOREIGN KEY (user_id) REFERENCES users (discord_id) ON DELETE CASCADE
         )""",
 
@@ -190,8 +191,7 @@ def get_featured_log(lastfm_user: str) -> Optional[List[Dict]]:
     cursor = db.cursor()
     cursor.execute(
         """SELECT fa.* FROM featured_albums fa
-           JOIN users u ON fa.lastfm_username = u.lastfm_username
-           WHERE u.lastfm_username = ?
+           WHERE fa.lastfm_username = ?
            ORDER BY fa.featured_at DESC""",
         (lastfm_user,)
     )
@@ -222,7 +222,8 @@ def get_preferences(discord_id: int) -> Optional[Dict]:
         return {
             'discord_id': discord_id,
             'track': result['track'],
-            'notify': result['notify']
+            'notify': result['notify'],
+            'double_track': result['double_track']
         }
     return None
 
@@ -232,11 +233,12 @@ def set_preferences(discord_id: int, preferences: Dict) -> bool:
         cursor = db.cursor()
         cursor.execute(
             """UPDATE user_preferences
-               SET track = ?, notify = ?
+               SET track = ?, notify = ?, double_track = ?
                WHERE user_id = ?""",
             (
                 preferences.get('track'),
                 preferences.get('notify'),
+                preferences.get('double_track'),
                 discord_id
             )
         )

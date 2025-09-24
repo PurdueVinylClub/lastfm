@@ -66,7 +66,32 @@ async def on_message(message):
         else:
             await message.channel.send('Failed to connect to Last.fm account. Please ping Avery and try again later.')
 
-    if message.content.startswith('!disconnect'):
+    elif message.content.startswith('!dues'):
+        preferences = db.get_preferences(message.author.id)
+
+        if preferences is None:
+            await message.channel.send('You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>` and try again.')
+            return
+        
+        # check if dues payer / officer
+
+        if message.content == '!dues':
+            if not preferences['double_track']:
+                await message.channel.send('You aren\'t being tracked on dues payer Sunday. Run `!dues on` to start tracking.')
+            else:
+                await message.channel.send('You are currently being tracked on dues payer Sunday. Run `!dues off` to stop tracking.')
+
+        if message.content == '!dues on':
+            preferences['double_track'] = True
+            db.set_preferences(message.author.id, preferences)
+            await message.channel.send('You are now eligible to be featured extra.')
+
+        if message.content == '!dues off':
+            preferences['double_track'] = False
+            db.set_preferences(message.author.id, preferences)
+            await message.channel.send('You are no longer eligible to be featured extra.')
+
+    elif message.content.startswith('!disconnect'):
         if not db.get_lastfm_user(message.author.id):
             await message.channel.send('You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>`') 
             return
@@ -80,7 +105,12 @@ async def on_message(message):
         await message.channel.send('TODO')
 
     elif message.content.startswith('!featuredlog'):
-        lastfm_user = db.get_lastfm_user(message.author.id)
+        if len(message.content.split(' ')) > 1:
+            lastfm_user = message.content.split(' ')[1]
+            nickname = lastfm_user
+        else:
+            lastfm_user = db.get_lastfm_user(message.author.id)
+            nickname = message.author.display_name
 
         if not lastfm_user:
             await message.channel.send('You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>` and try again.')
@@ -88,7 +118,7 @@ async def on_message(message):
 
         featured_log = db.get_featured_log(lastfm_user)
 
-        await message.channel.send(embed=formatter.featurelog_embed(featured_log))
+        await message.channel.send(embed=formatter.featurelog_embed(nickname, featured_log))
 
     elif message.content.startswith('!f'): # most recent featured
         album_details = db.get_featured_album()
