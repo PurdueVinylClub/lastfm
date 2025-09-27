@@ -10,13 +10,10 @@ import sys
 import traceback
 import urllib3
 import socket
-
-featured_album = None
-featured_artist = None
-featured_member = None
-featured_time = None
+import database as db
 
 def main() -> tuple[dict | None, str]:
+    db.init() # connect to database (if not already)
     dotenv.load_dotenv()
 
     API_KEY = os.environ.get('LASTFM_API_KEY')
@@ -28,14 +25,16 @@ def main() -> tuple[dict | None, str]:
     # as 09/10 9:45 AM
     print_buffer += time.strftime("%m/%d %I:%M %p", time.localtime()) + " "
 
-    # read members
     # if sunday only dues payers
-    # TODO (don't have db of dues payers yet)
-    with open('usernames.txt', 'r') as f:
-        members = f.read().splitlines()
+    if datetime.datetime.now().weekday() == 6:
+        username = db.get_random_special_user()
+        if username is None:
+            return None, ""
+    else:
+        username = db.get_random_user()
+        if username is None:
+            return None, ""
 
-    # get random member
-    username = random.choice(members)
     print_buffer += username
 
     # get top albums
@@ -132,6 +131,7 @@ if __name__ == "__main__":
             (featured_album, print_buffer) = main()
             if featured_album:
                 print(print_buffer)
+                db.set_featured_album(featured_album['member_l'], featured_album['artist_name'], featured_album['artist_url'], featured_album['album'], featured_album['album_url'], featured_album['cover_url'])
                 break
         except (ConnectionError, socket.gaierror, urllib3.exceptions.NameResolutionError) as e:
             # no use continuously retrying, seems like deeper (network) issue

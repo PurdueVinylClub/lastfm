@@ -13,6 +13,7 @@ import csv
 from typing import Optional, List, Dict, Tuple
 from datetime import datetime
 import os
+import random
 
 db: sqlite3.Connection = None
 
@@ -107,6 +108,51 @@ def delete_user(discord_id: int) -> bool:
     except Exception as e:
         print(f"Error deleting user: {e}")
         return False
+
+def get_num_users() -> int:
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) FROM users"
+    )
+    result = cursor.fetchone()
+    cursor.close()
+    return result[0]
+
+def get_num_special_users() -> int:
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) FROM users WHERE is_special = 1"
+    )
+    result = cursor.fetchone()
+    cursor.close()
+    return result[0]
+
+# picks special users twice as often
+def get_random_user() -> Optional[str]:
+    """Get a random user."""
+    num_users = get_num_users()
+    num_special = get_num_special_users()
+
+    if random.random() < num_special / (num_users + num_special):
+        return get_random_special_user()
+
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT lastfm_username FROM users ORDER BY RANDOM() LIMIT 1"
+    )
+    result = cursor.fetchone()
+    cursor.close()
+    return result['lastfm_username'] if result else None
+
+def get_random_special_user() -> Optional[str]:
+    """Get a random special user."""
+    cursor = db.cursor()
+    cursor.execute(
+        "SELECT lastfm_username FROM users WHERE is_special = 1 ORDER BY RANDOM() LIMIT 1"
+    )
+    result = cursor.fetchone()
+    cursor.close()
+    return result['lastfm_username'] if result else None
 
 def get_lastfm_user(discord_id: int) -> Optional[str]:
     """Get Last.fm username by Discord ID."""
