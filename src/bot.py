@@ -1,10 +1,11 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 import discord
-import database as db
-import formatter
+from . import database as db
+from . import formatter
 import os
+import sys
 import dotenv
-import main
+from . import main
 
 dotenv.load_dotenv()
 token = os.environ.get("DISCORD_TOKEN")
@@ -35,7 +36,9 @@ async def on_ready():
     # start_track()
 
     (featured_album, print_buffer) = main.main()
-    assert featured_album is not None
+    if featured_album is None:
+        print("Warning: Failed to feature an album on startup", file=sys.stderr)
+        return
 
     print(print_buffer)
 
@@ -62,13 +65,21 @@ async def on_message(message):
             )
             return
 
-        if len(message.content.split(" ")) < 2:
+        parts = message.content.split()
+        if len(parts) < 2:
             await message.channel.send(
                 "Please provide a Last.fm username. Usage: `!connect <lastfm_username>`"
             )
             return
 
-        lastfm_user = message.content.split(" ")[1]
+        lastfm_user = parts[1].strip()
+
+        # Validate Last.fm username (basic validation)
+        if not lastfm_user or len(lastfm_user) > 15 or not lastfm_user.replace("_", "").replace("-", "").isalnum():
+            await message.channel.send(
+                "Invalid Last.fm username. Usernames must be 1-15 characters and contain only letters, numbers, hyphens, and underscores."
+            )
+            return
         if db.set_lfm_discord_connection(message.author.id, lastfm_user):
             await message.channel.send(
                 "Connected to Last.fm account: " + lastfm_user + "."
@@ -126,11 +137,31 @@ async def on_message(message):
             )
 
     elif message.content.startswith("!help"):
-        await message.channel.send("TODO")
+        help_text = """**PVC Last.fm Bot Commands**
+
+**Connection:**
+`!connect <lastfm_username>` - Connect your Discord account to your Last.fm account
+`!disconnect` - Disconnect your Last.fm account
+
+**Settings:**
+`!settings` - View your current settings
+`!track [on/off]` - Toggle whether you're eligible to be featured
+`!notify [on/off]` - Toggle whether you get notified when featured
+`!dues [on/off]` - Toggle eligibility for extra featuring on Sundays (dues payers only)
+
+**Information:**
+`!f` - Show the most recently featured album
+`!featuredlog [username]` - View your featured album history (or someone else's)
+`!help` - Show this help message
+
+**How it works:**
+The bot randomly features albums from users' Last.fm top albums every 15 minutes and scrobbles a random track from the selected album."""
+        await message.channel.send(help_text)
 
     elif message.content.startswith("!featuredlog"):
-        if len(message.content.split(" ")) > 1:
-            lastfm_user = message.content.split(" ")[1]
+        parts = message.content.split()
+        if len(parts) > 1:
+            lastfm_user = parts[1].strip()
             nickname = lastfm_user
         else:
             lastfm_user = db.get_lastfm_user(message.author.id)

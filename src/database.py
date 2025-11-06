@@ -11,14 +11,21 @@ Include list of special roles?
 import sqlite3
 from typing import Optional, List, Dict
 import random
+import os
+from pathlib import Path
 
 db: sqlite3.Connection = None
+
+# Get data directory from environment or use default
+DATA_DIR = Path(os.environ.get("PVC_DATA_DIR", "./data"))
+DATA_DIR.mkdir(exist_ok=True)
 
 
 def init():
     """Initialize database connection and create tables if they don't exist."""
     global db
-    db = sqlite3.connect("pvc.db")
+    db_path = DATA_DIR / "pvc.db"
+    db = sqlite3.connect(str(db_path))
     db.row_factory = sqlite3.Row  # Enable dict-like access to rows
 
     cursor = db.cursor()

@@ -1,0 +1,13 @@
+# Last.fm Discord Bot Dependencies
+
+# Discord integration
+discord.py>=2.3.0
+
+# HTTP requests for Last.fm API
+requests>=2.31.0
+
+# Environment variable management
+python-dotenv>=1.0.0
+
+# Task scheduling (for periodic album features)
+APScheduler>=3.10.0
