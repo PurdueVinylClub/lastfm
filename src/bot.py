@@ -182,4 +182,7 @@ async def on_message(message):
             db.set_preferences(message.author.id, preferences)
             await message.channel.send('You will no longer be notified when you are featured.')
 
-client.run(token)
+if not token:
+    print("Error: no token found in .env")
+else:
+    client.run(token)
