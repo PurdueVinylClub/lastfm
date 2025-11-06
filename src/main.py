@@ -12,13 +12,17 @@ import urllib3
 import socket
 import database as db
 
+
 def main() -> tuple[dict | None, str]:
-    db.init() # connect to database (if not already)
+    db.init()  # connect to database (if not already)
     dotenv.load_dotenv()
 
-    API_KEY = os.environ.get('LASTFM_API_KEY')
-    SESSION_KEY = os.environ.get('LASTFM_SESSION_KEY')
-    SECRET = os.environ.get('LASTFM_SECRET')
+    API_KEY = os.environ.get("LASTFM_API_KEY")
+    SESSION_KEY = os.environ.get("LASTFM_SESSION_KEY")
+    SECRET = os.environ.get("LASTFM_SECRET")
+
+    if API_KEY is None or SESSION_KEY is None or SECRET is None:
+        return None, ""
 
     print_buffer = ""
 
@@ -45,10 +49,10 @@ def main() -> tuple[dict | None, str]:
     response = requests.get(topalbums_url)
     data = json.loads(response.text)
 
-    if 'topalbums' not in data:
+    if "topalbums" not in data:
         return None, ""
 
-    top_albums = data['topalbums']['album'][0:15]
+    top_albums = data["topalbums"]["album"][0:15]
 
     if len(top_albums) == 0:
         return None, ""
@@ -64,66 +68,70 @@ def main() -> tuple[dict | None, str]:
     data = json.loads(response.text)
 
     # download album art
-    if 'album' not in data:
+    if "album" not in data:
         return None, ""
 
-    album_art_url = data['album']['image'][3]['#text']
+    album_art_url = data["album"]["image"][3]["#text"]
 
     if album_art_url != "":
         response = requests.get(album_art_url)
-        with open('album_art.jpg', 'wb') as f:
+        with open("album_art.jpg", "wb") as f:
             f.write(response.content)
 
-    if 'tracks' in data['album']:
-        if 'track' not in data['album']['tracks'] or not data['album']['tracks']['track']:
+    if "tracks" in data["album"]:
+        if (
+            "track" not in data["album"]["tracks"]
+            or not data["album"]["tracks"]["track"]
+        ):
             return None, ""
 
         time_now = int(time.time())
 
         # print random track
-        random_track = random.choice(list(data['album']['tracks']['track']))
+        random_track = random.choice(list(data["album"]["tracks"]["track"]))
         scrobble_sig = ""
-        if 'name' in random_track:
-            track_name = random_track['name']
+        if "name" in random_track:
+            track_name: type[str] = random_track["name"]
         elif random_track is str:
             track_name = random_track
         else:
             return None, ""
 
-        print_buffer += " " + track_name
+        print_buffer += f" {track_name}"
         scrobble_sig += f"api_key{API_KEY}artist{random_album['artist']['name']}methodtrack.scrobblesk{SESSION_KEY}timestamp{time_now}track{track_name}"
 
         # construct sig to scrobble track
         scrobble_sig += SECRET
-        scrobble_sig = scrobble_sig.encode('utf-8')
+        scrobble_sig = scrobble_sig.encode("utf-8")
         scrobble_sig = hashlib.md5(scrobble_sig).hexdigest()
 
         # scrobble track
-        scrobble_url = f"http://ws.audioscrobbler.com/2.0/"
+        scrobble_url = "http://ws.audioscrobbler.com/2.0/"
         post_body = {
-            'method': 'track.scrobble',
-            'api_key': API_KEY,
-            'artist': random_album['artist']['name'],
-            'track': track_name,
-            'timestamp': time_now,
-            'sk': SESSION_KEY,
-            'api_sig': scrobble_sig,
-            'format': 'json'
+            "method": "track.scrobble",
+            "api_key": API_KEY,
+            "artist": random_album["artist"]["name"],
+            "track": track_name,
+            "timestamp": time_now,
+            "sk": SESSION_KEY,
+            "api_sig": scrobble_sig,
+            "format": "json",
         }
         response = requests.post(scrobble_url, data=post_body)
         data = json.loads(response.text)
         print_buffer += " " + str(data)
 
     featured_album = {
-        'member_l': username,
-        'artist_name': random_album['artist']['name'],
-        'artist_url': random_album['artist']['url'],
-        'album': random_album['name'],
-        'album_url': random_album['url'],
-        'cover_url': album_art_url
+        "member_l": username,
+        "artist_name": random_album["artist"]["name"],
+        "artist_url": random_album["artist"]["url"],
+        "album": random_album["name"],
+        "album_url": random_album["url"],
+        "cover_url": album_art_url,
     }
 
-    return featured_album, print_buffer 
+    return featured_album, print_buffer
+
 
 if __name__ == "__main__":
     while True:
@@ -131,14 +139,30 @@ if __name__ == "__main__":
             (featured_album, print_buffer) = main()
             if featured_album:
                 print(print_buffer)
-                db.set_featured_album(featured_album['member_l'], featured_album['artist_name'], featured_album['artist_url'], featured_album['album'], featured_album['album_url'], featured_album['cover_url'])
+                db.set_featured_album(
+                    featured_album["member_l"],
+                    featured_album["artist_name"],
+                    featured_album["artist_url"],
+                    featured_album["album"],
+                    featured_album["album_url"],
+                    featured_album["cover_url"],
+                )
                 break
-        except (ConnectionError, socket.gaierror, urllib3.exceptions.NameResolutionError) as e:
+        except (
+            ConnectionError,
+            socket.gaierror,
+            urllib3.exceptions.NameResolutionError,
+        ) as e:
             # no use continuously retrying, seems like deeper (network) issue
-            print(f"{time.strftime('%m/%d %I:%M %p')} ConnectionError/socket.gaierror: {str(e)}, aborting...", file=sys.stderr)
+            print(
+                f"{time.strftime('%m/%d %I:%M %p')} ConnectionError/socket.gaierror: {str(e)}, aborting...",
+                file=sys.stderr,
+            )
             break
-        except Exception as e:
+        except Exception:
             tb = traceback.format_exc()
-            print(f"{time.strftime('%m/%d %I:%M %p')} Error: {str(tb)}", file=sys.stderr)
+            print(
+                f"{time.strftime('%m/%d %I:%M %p')} Error: {str(tb)}", file=sys.stderr
+            )
             # try again
             continue

@@ -5,14 +5,14 @@ import dotenv
 import hashlib
 
 dotenv.load_dotenv()
-API_KEY = os.environ.get('LASTFM_API_KEY')
-SECRET = os.environ.get('LASTFM_SECRET')
+API_KEY = os.environ.get("LASTFM_API_KEY")
+SECRET = os.environ.get("LASTFM_SECRET")
 
 auth_token = input("Paste your Last.fm Auth Token: ")
 
 signature = f"api_key{API_KEY}methodauth.getSessiontoken{auth_token}"
 signature += SECRET
-signature = signature.encode('utf-8')
+signature = signature.encode("utf-8")
 signature = hashlib.md5(signature).hexdigest()
 print(signature)
 

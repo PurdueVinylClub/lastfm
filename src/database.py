@@ -9,18 +9,16 @@ Include list of special roles?
 """
 
 import sqlite3
-import csv
-from typing import Optional, List, Dict, Tuple
-from datetime import datetime
-import os
+from typing import Optional, List, Dict
 import random
 
 db: sqlite3.Connection = None
 
+
 def init():
     """Initialize database connection and create tables if they don't exist."""
     global db
-    db = sqlite3.connect('pvc.db')
+    db = sqlite3.connect("pvc.db")
     db.row_factory = sqlite3.Row  # Enable dict-like access to rows
 
     cursor = db.cursor()
@@ -33,7 +31,6 @@ def init():
             is_active BOOLEAN DEFAULT 1,
             is_special BOOLEAN DEFAULT 0
         )""",
-
         """CREATE TABLE IF NOT EXISTS user_preferences (
             user_id INTEGER PRIMARY KEY,
             track BOOLEAN DEFAULT 1,
@@ -41,7 +38,6 @@ def init():
             double_track BOOLEAN DEFAULT 0,
             FOREIGN KEY (user_id) REFERENCES users (discord_id) ON DELETE CASCADE
         )""",
-
         """CREATE TABLE IF NOT EXISTS featured_albums (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             lastfm_username TEXT NOT NULL,
@@ -70,7 +66,9 @@ def init():
     db.commit()
     cursor.close()
 
+
 # user management
+
 
 def create_user(discord_id: int, lastfm_username: str) -> bool:
     """Create a new user with Discord and Last.fm connection."""
@@ -78,12 +76,11 @@ def create_user(discord_id: int, lastfm_username: str) -> bool:
         cursor = db.cursor()
         cursor.execute(
             "INSERT INTO users (discord_id, lastfm_username) VALUES (?, ?)",
-            (discord_id, lastfm_username)
+            (discord_id, lastfm_username),
         )
-    
+
         cursor.execute(
-            "INSERT OR IGNORE INTO user_preferences (user_id) VALUES (?)",
-            (discord_id,)
+            "INSERT OR IGNORE INTO user_preferences (user_id) VALUES (?)", (discord_id,)
         )
 
         db.commit()
@@ -93,15 +90,12 @@ def create_user(discord_id: int, lastfm_username: str) -> bool:
     except sqlite3.IntegrityError:
         return False  # User already exists
 
-    
+
 def delete_user(discord_id: int) -> bool:
     """Delete a user."""
     try:
         cursor = db.cursor()
-        cursor.execute(
-            "DELETE FROM users WHERE discord_id = ?",
-            (discord_id,)
-        )
+        cursor.execute("DELETE FROM users WHERE discord_id = ?", (discord_id,))
         db.commit()
         cursor.close()
         return True
@@ -109,23 +103,22 @@ def delete_user(discord_id: int) -> bool:
         print(f"Error deleting user: {e}")
         return False
 
+
 def get_num_users() -> int:
     cursor = db.cursor()
-    cursor.execute(
-        "SELECT COUNT(*) FROM users"
-    )
+    cursor.execute("SELECT COUNT(*) FROM users")
     result = cursor.fetchone()
     cursor.close()
     return result[0]
 
+
 def get_num_special_users() -> int:
     cursor = db.cursor()
-    cursor.execute(
-        "SELECT COUNT(*) FROM users WHERE is_special = 1"
-    )
+    cursor.execute("SELECT COUNT(*) FROM users WHERE is_special = 1")
     result = cursor.fetchone()
     cursor.close()
     return result[0]
+
 
 # picks special users twice as often
 def get_random_user() -> Optional[str]:
@@ -137,12 +130,11 @@ def get_random_user() -> Optional[str]:
         return get_random_special_user()
 
     cursor = db.cursor()
-    cursor.execute(
-        "SELECT lastfm_username FROM users ORDER BY RANDOM() LIMIT 1"
-    )
+    cursor.execute("SELECT lastfm_username FROM users ORDER BY RANDOM() LIMIT 1")
     result = cursor.fetchone()
     cursor.close()
-    return result['lastfm_username'] if result else None
+    return result["lastfm_username"] if result else None
+
 
 def get_random_special_user() -> Optional[str]:
     """Get a random special user."""
@@ -152,52 +144,59 @@ def get_random_special_user() -> Optional[str]:
     )
     result = cursor.fetchone()
     cursor.close()
-    return result['lastfm_username'] if result else None
+    return result["lastfm_username"] if result else None
+
 
 def get_lastfm_user(discord_id: int) -> Optional[str]:
     """Get Last.fm username by Discord ID."""
     cursor = db.cursor()
     cursor.execute(
-        "SELECT lastfm_username FROM users WHERE discord_id = ?",
-        (discord_id,)
+        "SELECT lastfm_username FROM users WHERE discord_id = ?", (discord_id,)
     )
     result = cursor.fetchone()
     cursor.close()
-    return result['lastfm_username'] if result else None
+    return result["lastfm_username"] if result else None
+
 
 def get_discord_id(lastfm_user: str) -> Optional[int]:
     """Get Discord ID by Last.fm username."""
     cursor = db.cursor()
     cursor.execute(
-        "SELECT discord_id FROM users WHERE lastfm_username = ?",
-        (lastfm_user,)
+        "SELECT discord_id FROM users WHERE lastfm_username = ?", (lastfm_user,)
     )
     result = cursor.fetchone()
     cursor.close()
-    return result['discord_id'] if result else None
+    return result["discord_id"] if result else None
+
 
 def set_lfm_discord_connection(discord_id: int, lastfm_user: str) -> bool:
     """Create or update the connection between Discord and Last.fm accounts."""
     return create_user(discord_id, lastfm_user)
 
+
 # featured album functions
 
-def set_featured_album(lastfm_user: str, artist_name: str, artist_url: str,
-                       album_name: str, album_url: str, cover_url: str) -> bool:
+
+def set_featured_album(
+    lastfm_user: str,
+    artist_name: str,
+    artist_url: str,
+    album_name: str,
+    album_url: str,
+    cover_url: str,
+) -> bool:
     """Set a new featured album and mark it as current."""
     try:
         cursor = db.cursor()
 
         # Mark all previous albums as not current
-        cursor.execute(
-            "UPDATE featured_albums SET is_current = 0 WHERE is_current = 1"
-        )
+        cursor.execute("UPDATE featured_albums SET is_current = 0 WHERE is_current = 1")
 
         cursor.execute(
             """INSERT INTO featured_albums
                (lastfm_username, artist_name, artist_url, album_name, album_url, cover_url, is_current)
                VALUES (?, ?, ?, ?, ?, ?, 1)""",
-            (lastfm_user, artist_name, artist_url, album_name, album_url, cover_url)
+            (lastfm_user, artist_name, artist_url, album_name, album_url, cover_url),
         )
 
         db.commit()
@@ -206,6 +205,7 @@ def set_featured_album(lastfm_user: str, artist_name: str, artist_url: str,
     except Exception as e:
         print(f"Error setting featured album: {e}")
         return False
+
 
 def get_featured_album() -> Optional[Dict]:
     """Get the current featured album."""
@@ -223,14 +223,15 @@ def get_featured_album() -> Optional[Dict]:
         return None
 
     return {
-        'member_l': result['lastfm_username'],
-        'artist_name': result['artist_name'],
-        'artist_url': result['artist_url'],
-        'album': result['album_name'],
-        'album_url': result['album_url'],
-        'cover_url': result['cover_url'],
-        'timestamp': result['featured_at']
+        "member_l": result["lastfm_username"],
+        "artist_name": result["artist_name"],
+        "artist_url": result["artist_url"],
+        "album": result["album_name"],
+        "album_url": result["album_url"],
+        "cover_url": result["cover_url"],
+        "timestamp": result["featured_at"],
     }
+
 
 def get_featured_log(lastfm_user: str) -> Optional[List[Dict]]:
     """Get featured album history for a specific user."""
@@ -239,7 +240,7 @@ def get_featured_log(lastfm_user: str) -> Optional[List[Dict]]:
         """SELECT fa.* FROM featured_albums fa
            WHERE fa.lastfm_username = ?
            ORDER BY fa.featured_at DESC""",
-        (lastfm_user,)
+        (lastfm_user,),
     )
     results = cursor.fetchall()
     cursor.close()
@@ -249,7 +250,9 @@ def get_featured_log(lastfm_user: str) -> Optional[List[Dict]]:
 
     return [dict(row) for row in results]
 
+
 # preferences functions
+
 
 def get_preferences(discord_id: int) -> Optional[Dict]:
     """Get user preferences by Discord ID."""
@@ -257,21 +260,19 @@ def get_preferences(discord_id: int) -> Optional[Dict]:
         return None
 
     cursor = db.cursor()
-    cursor.execute(
-        "SELECT * FROM user_preferences WHERE user_id = ?",
-        (discord_id,)
-    )
+    cursor.execute("SELECT * FROM user_preferences WHERE user_id = ?", (discord_id,))
     result = cursor.fetchone()
     cursor.close()
 
     if result:
         return {
-            'discord_id': discord_id,
-            'track': result['track'],
-            'notify': result['notify'],
-            'double_track': result['double_track']
+            "discord_id": discord_id,
+            "track": result["track"],
+            "notify": result["notify"],
+            "double_track": result["double_track"],
         }
     return None
+
 
 def set_preferences(discord_id: int, preferences: Dict) -> bool:
     """Set user preferences."""
@@ -282,11 +283,11 @@ def set_preferences(discord_id: int, preferences: Dict) -> bool:
                SET track = ?, notify = ?, double_track = ?
                WHERE user_id = ?""",
             (
-                preferences.get('track'),
-                preferences.get('notify'),
-                preferences.get('double_track'),
-                discord_id
-            )
+                preferences.get("track"),
+                preferences.get("notify"),
+                preferences.get("double_track"),
+                discord_id,
+            ),
         )
         db.commit()
         cursor.close()
