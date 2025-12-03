@@ -2,10 +2,8 @@
 
 Database structure:
     - users: user information linking Discord and Last.fm accounts
-    - user_preferences
+    - user_preferences: user preferences for tracking, notifications, etc...
     - featured_albums: record of all featured albums
-
-Include list of special roles?
 """
 
 import sqlite3

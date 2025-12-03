@@ -1,4 +1,5 @@
 import discord
+from dateutil.parser import parse
 
 
 def featured_embed(album_details: dict) -> discord.Embed:
@@ -16,10 +17,11 @@ def featurelog_embed(name: str, featured_log: list) -> discord.Embed:
     embed.title = f"{name}'s featured history:"
 
     if featured_log:
-        for album in featured_log:
+        for album in featured_log[0:20]: # maximum of 20
             embed.add_field(
                 name=f"{album['artist_name']} - {album['album_name']}",
-                value=f"Featured at {album['featured_at']}",
+                value=f"Featured on {parse(album['featured_at']).strftime('%m/%d %I:%M %p UTC')}", #parse time from string then format -> ie "Featured on 9/12/25 6:00 PM"
+                #TODO timezone support
                 inline=False,
             )
     else:

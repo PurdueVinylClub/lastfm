@@ -12,7 +12,7 @@ import urllib3
 import socket
 from urllib.parse import quote_plus
 from pathlib import Path
-from . import database as db
+import database as db
 
 # Get data directory from environment or use default
 DATA_DIR = Path(os.environ.get("PVC_DATA_DIR", "./data"))

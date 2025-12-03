@@ -1,11 +1,11 @@
 from apscheduler.schedulers.blocking import BlockingScheduler
 import discord
-from . import database as db
-from . import formatter
+import database as db
+import formatter
 import os
 import sys
 import dotenv
-from . import main
+import main
 
 dotenv.load_dotenv()
 token = os.environ.get("DISCORD_TOKEN")
@@ -22,7 +22,7 @@ def start_track():
     scheduler = BlockingScheduler()
 
     # Run every 15 minutes, at second 30 (xx:00:30, xx:15:30, xx:30:30, xx:45:30)
-    scheduler.add_job(main.main, "cron", minute="0,15,30,45", second=30)
+    scheduler.add_job(main.main, "cron", minute="0")
 
     print("Scheduler started...")
     scheduler.start()
@@ -74,19 +74,13 @@ async def on_message(message):
 
         lastfm_user = parts[1].strip()
 
-        # Validate Last.fm username (basic validation)
-        if not lastfm_user or len(lastfm_user) > 15 or not lastfm_user.replace("_", "").replace("-", "").isalnum():
-            await message.channel.send(
-                "Invalid Last.fm username. Usernames must be 1-15 characters and contain only letters, numbers, hyphens, and underscores."
-            )
-            return
         if db.set_lfm_discord_connection(message.author.id, lastfm_user):
             await message.channel.send(
                 "Connected to Last.fm account: " + lastfm_user + "."
             )
         else:
             await message.channel.send(
-                "Failed to connect to Last.fm account. Please ping Avery and try again later."
+                "Failed to connect to Last.fm account. Please ping Avery and/or try again later."
             )
 
     elif message.content.startswith("!dues"):
