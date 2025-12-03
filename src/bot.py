@@ -1,4 +1,4 @@
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 import discord
 import database as db
 import formatter
@@ -19,10 +19,13 @@ client = discord.Client(intents=intents)
 
 
 def start_track():
-    scheduler = BlockingScheduler()
+    # should be nonblocking
+    scheduler = BackgroundScheduler()
 
-    # Run every 15 minutes, at second 30 (xx:00:30, xx:15:30, xx:30:30, xx:45:30)
-    scheduler.add_job(main.main, "cron", minute="0")
+    # Run every hour at xx:00:00
+    scheduler.add_job(main.main, "cron", hour="*")
+    
+    #TODO change bot pfp to album art automatically
 
     print("Scheduler started...")
     scheduler.start()
@@ -31,9 +34,9 @@ def start_track():
 @client.event
 async def on_ready():
     print(f"We have logged in as {client.user}")
-    await client.change_presence(activity=discord.Game(name="Featuring NULL"))
+    await client.change_presence(activity=discord.Game(name="Featuring albums"))
 
-    # start_track()
+    start_track()
 
     (featured_album, print_buffer) = main.main()
     if featured_album is None:
@@ -149,7 +152,7 @@ async def on_message(message):
 `!help` - Show this help message
 
 **How it works:**
-The bot randomly features albums from users' Last.fm top albums every 15 minutes and scrobbles a random track from the selected album."""
+The bot randomly features albums from users' Last.fm top albums every hour and scrobbles a random track from the selected album."""
         await message.channel.send(help_text)
 
     elif message.content.startswith("!featuredlog"):

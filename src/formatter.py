@@ -28,12 +28,7 @@ def featurelog_embed(name: str, featured_log: list) -> discord.Embed:
         embed.description = """
         Sorry, you haven't been featured yet...
 
-        But don't give up hope just yet!
-        Every hour there is a 1 in 80,889 chance that you might be picked.
-
-        Join our server to get pinged if you get featured.
-
-        Become an .fmbot supporter and get a higher chance every Supporter Sunday. The next Supporter Sunday is in 10 days (first Sunday of each month).
+        Become a dues payer and get a higher chance every Sunday.
         """
 
     return embed
