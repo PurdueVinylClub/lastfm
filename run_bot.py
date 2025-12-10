@@ -2,4 +2,6 @@
 """Entry point script to run the PVC Last.fm Discord bot."""
 
 if __name__ == "__main__":
-    from src import bot
+    # src/bot.py calls code automatically
+    # TODO properly format as importable module
+    from src import bot  # noqa: F401
