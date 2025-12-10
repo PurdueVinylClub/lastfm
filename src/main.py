@@ -1,17 +1,19 @@
-import random
-import requests
+import datetime
+import hashlib
 import json
 import os
-import dotenv
-import time
-import hashlib
-import datetime
-import sys
-import traceback
-import urllib3
+import random
 import socket
-from urllib.parse import quote_plus
+import sys
+import time
+import traceback
 from pathlib import Path
+from urllib.parse import quote_plus
+
+import dotenv
+import requests
+import urllib3
+
 import database as db
 
 # Get data directory from environment or use default
@@ -75,7 +77,11 @@ def main() -> tuple[dict | None, str]:
     random_album = random.choice(top_albums)
 
     # Validate album structure
-    if not isinstance(random_album, dict) or "artist" not in random_album or "name" not in random_album:
+    if (
+        not isinstance(random_album, dict)
+        or "artist" not in random_album
+        or "name" not in random_album
+    ):
         print("Error: Invalid album structure in API response", file=sys.stderr)
         return None, ""
 
@@ -99,7 +105,11 @@ def main() -> tuple[dict | None, str]:
 
     # Try to get the largest image (usually index 3), fallback to smaller if not available
     album_art_url = ""
-    if "image" in data["album"] and isinstance(data["album"]["image"], list) and len(data["album"]["image"]) > 0:
+    if (
+        "image" in data["album"]
+        and isinstance(data["album"]["image"], list)
+        and len(data["album"]["image"]) > 0
+    ):
         # Try to get the largest image (index 3), or the last available one
         image_list = data["album"]["image"]
         if len(image_list) > 3 and "#text" in image_list[3]:
@@ -114,13 +124,13 @@ def main() -> tuple[dict | None, str]:
             with open(album_art_path, "wb") as f:
                 f.write(response.content)
         else:
-            print(f"Warning: Failed to download album art: HTTP {response.status_code}", file=sys.stderr)
+            print(
+                f"Warning: Failed to download album art: HTTP {response.status_code}",
+                file=sys.stderr,
+            )
 
     if "tracks" in data["album"]:
-        if (
-            "track" not in data["album"]["tracks"]
-            or not data["album"]["tracks"]["track"]
-        ):
+        if "track" not in data["album"]["tracks"] or not data["album"]["tracks"]["track"]:
             return None, ""
 
         time_now = int(time.time())
@@ -157,7 +167,9 @@ def main() -> tuple[dict | None, str]:
         }
         response = requests.post(scrobble_url, data=post_body)
         if response.status_code != 200:
-            print(f"Warning: Failed to scrobble track: HTTP {response.status_code}", file=sys.stderr)
+            print(
+                f"Warning: Failed to scrobble track: HTTP {response.status_code}", file=sys.stderr
+            )
         else:
             data = json.loads(response.text)
             print_buffer += " " + str(data)
@@ -194,7 +206,10 @@ if __name__ == "__main__":
                 break
             else:
                 # main() returned None, likely due to API error or no data
-                print(f"{time.strftime('%m/%d %I:%M %p')} No album featured (returned None)", file=sys.stderr)
+                print(
+                    f"{time.strftime('%m/%d %I:%M %p')} No album featured (returned None)",
+                    file=sys.stderr,
+                )
                 break
         except (
             ConnectionError,
@@ -215,7 +230,10 @@ if __name__ == "__main__":
                 file=sys.stderr,
             )
             if retry_count >= MAX_RETRIES:
-                print(f"{time.strftime('%m/%d %I:%M %p')} Max retries reached, aborting...", file=sys.stderr)
+                print(
+                    f"{time.strftime('%m/%d %I:%M %p')} Max retries reached, aborting...",
+                    file=sys.stderr,
+                )
                 break
             time.sleep(2)  # Wait before retrying
         except Exception as e:

@@ -1,8 +1,9 @@
-import requests
+import hashlib
 import json
 import os
+
 import dotenv
-import hashlib
+import requests
 
 dotenv.load_dotenv()
 API_KEY = os.environ.get("LASTFM_API_KEY")

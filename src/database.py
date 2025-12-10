@@ -6,11 +6,11 @@ Database structure:
     - featured_albums: record of all featured albums
 """
 
-import sqlite3
-from typing import Optional, List, Dict
-import random
 import os
+import random
+import sqlite3
 from pathlib import Path
+from typing import Optional, dict, list
 
 db: sqlite3.Connection = None
 
@@ -84,9 +84,7 @@ def create_user(discord_id: int, lastfm_username: str) -> bool:
             (discord_id, lastfm_username),
         )
 
-        cursor.execute(
-            "INSERT OR IGNORE INTO user_preferences (user_id) VALUES (?)", (discord_id,)
-        )
+        cursor.execute("INSERT OR IGNORE INTO user_preferences (user_id) VALUES (?)", (discord_id,))
 
         db.commit()
         cursor.close()
@@ -155,9 +153,7 @@ def get_random_special_user() -> Optional[str]:
 def get_lastfm_user(discord_id: int) -> Optional[str]:
     """Get Last.fm username by Discord ID."""
     cursor = db.cursor()
-    cursor.execute(
-        "SELECT lastfm_username FROM users WHERE discord_id = ?", (discord_id,)
-    )
+    cursor.execute("SELECT lastfm_username FROM users WHERE discord_id = ?", (discord_id,))
     result = cursor.fetchone()
     cursor.close()
     return result["lastfm_username"] if result else None
@@ -166,9 +162,7 @@ def get_lastfm_user(discord_id: int) -> Optional[str]:
 def get_discord_id(lastfm_user: str) -> Optional[int]:
     """Get Discord ID by Last.fm username."""
     cursor = db.cursor()
-    cursor.execute(
-        "SELECT discord_id FROM users WHERE lastfm_username = ?", (lastfm_user,)
-    )
+    cursor.execute("SELECT discord_id FROM users WHERE lastfm_username = ?", (lastfm_user,))
     result = cursor.fetchone()
     cursor.close()
     return result["discord_id"] if result else None
@@ -212,7 +206,7 @@ def set_featured_album(
         return False
 
 
-def get_featured_album() -> Optional[Dict]:
+def get_featured_album() -> Optional[dict]:
     """Get the current featured album."""
     cursor = db.cursor()
     cursor.execute(
@@ -238,7 +232,7 @@ def get_featured_album() -> Optional[Dict]:
     }
 
 
-def get_featured_log(lastfm_user: str) -> Optional[List[Dict]]:
+def get_featured_log(lastfm_user: str) -> Optional[list[dict]]:
     """Get featured album history for a specific user."""
     cursor = db.cursor()
     cursor.execute(
@@ -259,7 +253,7 @@ def get_featured_log(lastfm_user: str) -> Optional[List[Dict]]:
 # preferences functions
 
 
-def get_preferences(discord_id: int) -> Optional[Dict]:
+def get_preferences(discord_id: int) -> Optional[dict]:
     """Get user preferences by Discord ID."""
     if not discord_id:
         return None
@@ -279,7 +273,7 @@ def get_preferences(discord_id: int) -> Optional[Dict]:
     return None
 
 
-def set_preferences(discord_id: int, preferences: Dict) -> bool:
+def set_preferences(discord_id: int, preferences: dict) -> bool:
     """Set user preferences."""
     try:
         cursor = db.cursor()
@@ -300,6 +294,7 @@ def set_preferences(discord_id: int, preferences: Dict) -> bool:
     except Exception as e:
         print(f"Error setting preferences: {e}")
         return False
+
 
 def get_is_special(discord_id: int) -> bool:
     """Get whether a user is special."""

@@ -1,10 +1,12 @@
-from apscheduler.schedulers.background import BackgroundScheduler
-import discord
-import database as db
 import formatter
 import os
 import sys
+
+import discord
 import dotenv
+from apscheduler.schedulers.background import BackgroundScheduler
+
+import database as db
 import main
 
 dotenv.load_dotenv()
@@ -24,7 +26,7 @@ def start_track():
     # Run every hour at xx:00:00
     scheduler.add_job(main.main, "cron", hour="*")
 
-    #TODO change bot pfp to album art automatically
+    # TODO change bot pfp to album art automatically
 
     scheduler.start()
 
@@ -77,9 +79,7 @@ async def on_message(message):
         lastfm_user = parts[1].strip()
 
         if db.set_lfm_discord_connection(message.author.id, lastfm_user):
-            await message.channel.send(
-                "Connected to Last.fm account: " + lastfm_user + "."
-            )
+            await message.channel.send("Connected to Last.fm account: " + lastfm_user + ".")
         else:
             await message.channel.send(
                 "Failed to connect to Last.fm account. Please ping Avery and/or try again later."
@@ -117,9 +117,7 @@ async def on_message(message):
 
         if message.content == "!dues off":
             preferences["double_track"] = False
-            await message.channel.send(
-                "You are no longer eligible to be featured extra."
-            )
+            await message.channel.send("You are no longer eligible to be featured extra.")
 
         db.set_preferences(message.author.id, preferences)
 
@@ -176,9 +174,7 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
 
         featured_log = db.get_featured_log(lastfm_user)
 
-        await message.channel.send(
-            embed=formatter.featurelog_embed(nickname, featured_log)
-        )
+        await message.channel.send(embed=formatter.featurelog_embed(nickname, featured_log))
 
     elif message.content.startswith("!f"):  # most recent featured
         album_details = db.get_featured_album()
@@ -224,7 +220,6 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
 
         db.set_preferences(message.author.id, preferences)
 
-
     elif message.content.startswith("!noti"):
         preferences = db.get_preferences(message.author.id)
 
@@ -247,17 +242,14 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
 
         if message.content == "!notify on":
             preferences["notify"] = True
-            await message.channel.send(
-                "You will now be notified when you are featured."
-            )
+            await message.channel.send("You will now be notified when you are featured.")
 
         if message.content == "!notify off":
             preferences["notify"] = False
-            await message.channel.send(
-                "You will no longer be notified when you are featured."
-            )
+            await message.channel.send("You will no longer be notified when you are featured.")
 
         db.set_preferences(message.author.id, preferences)
+
 
 if not token:
     print("Error: no token found in .env")
