@@ -2,10 +2,13 @@
 .venv/*
 __pycache__/
 .DS_Store
+*.egg-info/
 
 # media / data
 *.log
 *.csv
 *.txt
+!requirements.txt
 *.jpg
 *.db
+data/

@@ -1,8 +1,9 @@
-import requests
+import hashlib
 import json
 import os
+
 import dotenv
-import hashlib
+import requests
 
 dotenv.load_dotenv()
 API_KEY = os.environ.get("LASTFM_API_KEY")
@@ -16,7 +17,11 @@ signature = signature.encode("utf-8")
 signature = hashlib.md5(signature).hexdigest()
 print(signature)
 
-fetch_session_url = f"http://ws.audioscrobbler.com/2.0/?method=auth.getSession&api_key={API_KEY}&token={auth_token}&api_sig={signature}&format=json"
+fetch_session_url = f"https://ws.audioscrobbler.com/2.0/?method=auth.getSession&api_key={API_KEY}&token={auth_token}&api_sig={signature}&format=json"
 response = requests.get(fetch_session_url)
-data = json.loads(response.text)
-print(data)
+if response.status_code != 200:
+    print(f"Error: HTTP {response.status_code}")
+    print(response.text)
+else:
+    data = json.loads(response.text)
+    print(data)

@@ -1,9 +1,12 @@
-from apscheduler.schedulers.blocking import BlockingScheduler
-import discord
-import database as db
 import formatter
 import os
+import sys
+
+import discord
 import dotenv
+from apscheduler.schedulers.background import BackgroundScheduler
+
+import database as db
 import main
 
 dotenv.load_dotenv()
@@ -18,24 +21,28 @@ client = discord.Client(intents=intents)
 
 
 def start_track():
-    scheduler = BlockingScheduler()
+    scheduler = BackgroundScheduler()
 
-    # Run every 15 minutes, at second 30 (xx:00:30, xx:15:30, xx:30:30, xx:45:30)
-    scheduler.add_job(main.main, "cron", minute="0,15,30,45", second=30)
+    # Run every hour at xx:00:00
+    scheduler.add_job(main.main, "cron", hour="*")
 
-    print("Scheduler started...")
+    # TODO change bot pfp to album art automatically
+
     scheduler.start()
 
 
 @client.event
 async def on_ready():
     print(f"We have logged in as {client.user}")
-    await client.change_presence(activity=discord.Game(name="Featuring NULL"))
+    await client.change_presence(activity=discord.Game(name="Featuring albums"))
 
-    # start_track()
+    start_track()
+    print("Scheduler started...")
 
     (featured_album, print_buffer) = main.main()
-    assert featured_album is not None
+    if featured_album is None:
+        print("Warning: Failed to feature an album on startup", file=sys.stderr)
+        return
 
     print(print_buffer)
 
@@ -62,20 +69,20 @@ async def on_message(message):
             )
             return
 
-        if len(message.content.split(" ")) < 2:
+        parts = message.content.split()
+        if len(parts) < 2:
             await message.channel.send(
                 "Please provide a Last.fm username. Usage: `!connect <lastfm_username>`"
             )
             return
 
-        lastfm_user = message.content.split(" ")[1]
+        lastfm_user = parts[1].strip()
+
         if db.set_lfm_discord_connection(message.author.id, lastfm_user):
-            await message.channel.send(
-                "Connected to Last.fm account: " + lastfm_user + "."
-            )
+            await message.channel.send("Connected to Last.fm account: " + lastfm_user + ".")
         else:
             await message.channel.send(
-                "Failed to connect to Last.fm account. Please ping Avery and try again later."
+                "Failed to connect to Last.fm account. Please ping Avery and/or try again later."
             )
 
     elif message.content.startswith("!dues"):
@@ -87,7 +94,11 @@ async def on_message(message):
             )
             return
 
-        # check if dues payer / officer
+        if not db.get_is_special(message.author.id):
+            await message.channel.send(
+                "You must be a dues payer to use this command. If you have paid dues, please ping Avery to add you to the database."
+            )
+            return
 
         if message.content == "!dues":
             if not preferences["double_track"]:
@@ -98,18 +109,17 @@ async def on_message(message):
                 await message.channel.send(
                     "You are currently being tracked on dues payer Sunday. Run `!dues off` to stop tracking."
                 )
+            return
 
         if message.content == "!dues on":
             preferences["double_track"] = True
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send("You are now eligible to be featured extra.")
 
         if message.content == "!dues off":
             preferences["double_track"] = False
-            db.set_preferences(message.author.id, preferences)
-            await message.channel.send(
-                "You are no longer eligible to be featured extra."
-            )
+            await message.channel.send("You are no longer eligible to be featured extra.")
+
+        db.set_preferences(message.author.id, preferences)
 
     elif message.content.startswith("!disconnect"):
         if not db.get_lastfm_user(message.author.id):
@@ -126,11 +136,31 @@ async def on_message(message):
             )
 
     elif message.content.startswith("!help"):
-        await message.channel.send("TODO")
+        help_text = """**PVC Last.fm Bot Commands**
+
+**Connection:**
+`!connect <lastfm_username>` - Connect your Discord account to your Last.fm account
+`!disconnect` - Disconnect your Last.fm account
+
+**Settings:**
+`!settings` - View your current settings
+`!track [on/off]` - Toggle whether you're eligible to be featured
+`!notify [on/off]` - Toggle whether you get notified when featured
+`!dues [on/off]` - Toggle eligibility for extra featuring on Sundays (dues payers only)
+
+**Information:**
+`!f` - Show the most recently featured album
+`!featuredlog [username]` - View your featured album history (or someone else's)
+`!help` - Show this help message
+
+**How it works:**
+The bot randomly features albums from users' Last.fm top albums every hour and scrobbles a random track from the selected album."""
+        await message.channel.send(help_text)
 
     elif message.content.startswith("!featuredlog"):
-        if len(message.content.split(" ")) > 1:
-            lastfm_user = message.content.split(" ")[1]
+        parts = message.content.split()
+        if len(parts) > 1:
+            lastfm_user = parts[1].strip()
             nickname = lastfm_user
         else:
             lastfm_user = db.get_lastfm_user(message.author.id)
@@ -144,9 +174,7 @@ async def on_message(message):
 
         featured_log = db.get_featured_log(lastfm_user)
 
-        await message.channel.send(
-            embed=formatter.featurelog_embed(nickname, featured_log)
-        )
+        await message.channel.send(embed=formatter.featurelog_embed(nickname, featured_log))
 
     elif message.content.startswith("!f"):  # most recent featured
         album_details = db.get_featured_album()
@@ -180,18 +208,17 @@ async def on_message(message):
                 await message.channel.send(
                     "You are currently eligible to be featured. Run `!track off` to stop tracking."
                 )
+            return
 
         if message.content == "!track on":
             preferences["track"] = True
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send("You are now eligible to be featured.")
 
         if message.content == "!track off":
             preferences["track"] = False
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send("You are no longer eligible to be featured.")
 
-        # TODO special roles stuff
+        db.set_preferences(message.author.id, preferences)
 
     elif message.content.startswith("!noti"):
         preferences = db.get_preferences(message.author.id)
@@ -211,20 +238,17 @@ async def on_message(message):
                 await message.channel.send(
                     "You are currently notified when you are featured. Run `!notify off` to stop notifying."
                 )
+            return
 
         if message.content == "!notify on":
             preferences["notify"] = True
-            db.set_preferences(message.author.id, preferences)
-            await message.channel.send(
-                "You will now be notified when you are featured."
-            )
+            await message.channel.send("You will now be notified when you are featured.")
 
         if message.content == "!notify off":
             preferences["notify"] = False
-            db.set_preferences(message.author.id, preferences)
-            await message.channel.send(
-                "You will no longer be notified when you are featured."
-            )
+            await message.channel.send("You will no longer be notified when you are featured.")
+
+        db.set_preferences(message.author.id, preferences)
 
 
 if not token:
