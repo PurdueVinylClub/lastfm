@@ -300,3 +300,11 @@ def set_preferences(discord_id: int, preferences: Dict) -> bool:
     except Exception as e:
         print(f"Error setting preferences: {e}")
         return False
+
+def get_is_special(discord_id: int) -> bool:
+    """Get whether a user is special."""
+    cursor = db.cursor()
+    cursor.execute("SELECT is_special FROM users WHERE discord_id = ?", (discord_id,))
+    result = cursor.fetchone()
+    cursor.close()
+    return result["is_special"] if result else False

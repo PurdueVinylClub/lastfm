@@ -20,6 +20,7 @@ DATA_DIR.mkdir(exist_ok=True)
 
 
 def main() -> tuple[dict | None, str]:
+    """Main function to feature an album and scrobble a track."""
     db.init()  # connect to database (if not already)
     dotenv.load_dotenv()
 
@@ -32,7 +33,7 @@ def main() -> tuple[dict | None, str]:
 
     print_buffer = ""
 
-    # as 09/10 9:45 AM
+    # such as 09/10 9:45 AM
     print_buffer += time.strftime("%m/%d %I:%M %p", time.localtime()) + " "
 
     # if sunday only dues payers

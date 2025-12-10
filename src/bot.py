@@ -19,15 +19,13 @@ client = discord.Client(intents=intents)
 
 
 def start_track():
-    # should be nonblocking
     scheduler = BackgroundScheduler()
 
     # Run every hour at xx:00:00
     scheduler.add_job(main.main, "cron", hour="*")
-    
+
     #TODO change bot pfp to album art automatically
 
-    print("Scheduler started...")
     scheduler.start()
 
 
@@ -37,6 +35,7 @@ async def on_ready():
     await client.change_presence(activity=discord.Game(name="Featuring albums"))
 
     start_track()
+    print("Scheduler started...")
 
     (featured_album, print_buffer) = main.main()
     if featured_album is None:
@@ -95,7 +94,11 @@ async def on_message(message):
             )
             return
 
-        # check if dues payer / officer
+        if not db.get_is_special(message.author.id):
+            await message.channel.send(
+                "You must be a dues payer to use this command. If you have paid dues, please ping Avery to add you to the database."
+            )
+            return
 
         if message.content == "!dues":
             if not preferences["double_track"]:
@@ -106,18 +109,19 @@ async def on_message(message):
                 await message.channel.send(
                     "You are currently being tracked on dues payer Sunday. Run `!dues off` to stop tracking."
                 )
+            return
 
         if message.content == "!dues on":
             preferences["double_track"] = True
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send("You are now eligible to be featured extra.")
 
         if message.content == "!dues off":
             preferences["double_track"] = False
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send(
                 "You are no longer eligible to be featured extra."
             )
+
+        db.set_preferences(message.author.id, preferences)
 
     elif message.content.startswith("!disconnect"):
         if not db.get_lastfm_user(message.author.id):
@@ -208,18 +212,18 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
                 await message.channel.send(
                     "You are currently eligible to be featured. Run `!track off` to stop tracking."
                 )
+            return
 
         if message.content == "!track on":
             preferences["track"] = True
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send("You are now eligible to be featured.")
 
         if message.content == "!track off":
             preferences["track"] = False
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send("You are no longer eligible to be featured.")
 
-        # TODO special roles stuff
+        db.set_preferences(message.author.id, preferences)
+
 
     elif message.content.startswith("!noti"):
         preferences = db.get_preferences(message.author.id)
@@ -239,21 +243,21 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
                 await message.channel.send(
                     "You are currently notified when you are featured. Run `!notify off` to stop notifying."
                 )
+            return
 
         if message.content == "!notify on":
             preferences["notify"] = True
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send(
                 "You will now be notified when you are featured."
             )
 
         if message.content == "!notify off":
             preferences["notify"] = False
-            db.set_preferences(message.author.id, preferences)
             await message.channel.send(
                 "You will no longer be notified when you are featured."
             )
 
+        db.set_preferences(message.author.id, preferences)
 
 if not token:
     print("Error: no token found in .env")
