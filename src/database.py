@@ -10,9 +10,9 @@ import os
 import random
 import sqlite3
 from pathlib import Path
-from typing import Optional, dict, list
+from typing import Optional
 
-db: sqlite3.Connection = None
+db: Optional[sqlite3.Connection] = None
 
 # Get data directory from environment or use default
 DATA_DIR = Path(os.environ.get("PVC_DATA_DIR", "./data"))
@@ -77,6 +77,7 @@ def init():
 
 def create_user(discord_id: int, lastfm_username: str) -> bool:
     """Create a new user with Discord and Last.fm connection."""
+    assert db is not None, "Database not initialized. Call init() first."
     try:
         cursor = db.cursor()
         cursor.execute(
@@ -96,6 +97,7 @@ def create_user(discord_id: int, lastfm_username: str) -> bool:
 
 def delete_user(discord_id: int) -> bool:
     """Delete a user."""
+    assert db is not None, "Database not initialized. Call init() first."
     try:
         cursor = db.cursor()
         cursor.execute("DELETE FROM users WHERE discord_id = ?", (discord_id,))
@@ -108,6 +110,7 @@ def delete_user(discord_id: int) -> bool:
 
 
 def get_num_users() -> int:
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute("SELECT COUNT(*) FROM users")
     result = cursor.fetchone()
@@ -116,6 +119,7 @@ def get_num_users() -> int:
 
 
 def get_num_special_users() -> int:
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute("SELECT COUNT(*) FROM users WHERE is_special = 1")
     result = cursor.fetchone()
@@ -126,6 +130,7 @@ def get_num_special_users() -> int:
 # picks special users twice as often
 def get_random_user() -> Optional[str]:
     """Get a random user."""
+    assert db is not None, "Database not initialized. Call init() first."
     num_users = get_num_users()
     num_special = get_num_special_users()
 
@@ -141,6 +146,7 @@ def get_random_user() -> Optional[str]:
 
 def get_random_special_user() -> Optional[str]:
     """Get a random special user."""
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute(
         "SELECT lastfm_username FROM users WHERE is_special = 1 ORDER BY RANDOM() LIMIT 1"
@@ -152,6 +158,7 @@ def get_random_special_user() -> Optional[str]:
 
 def get_lastfm_user(discord_id: int) -> Optional[str]:
     """Get Last.fm username by Discord ID."""
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute("SELECT lastfm_username FROM users WHERE discord_id = ?", (discord_id,))
     result = cursor.fetchone()
@@ -161,6 +168,7 @@ def get_lastfm_user(discord_id: int) -> Optional[str]:
 
 def get_discord_id(lastfm_user: str) -> Optional[int]:
     """Get Discord ID by Last.fm username."""
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute("SELECT discord_id FROM users WHERE lastfm_username = ?", (lastfm_user,))
     result = cursor.fetchone()
@@ -185,6 +193,7 @@ def set_featured_album(
     cover_url: str,
 ) -> bool:
     """Set a new featured album and mark it as current."""
+    assert db is not None, "Database not initialized. Call init() first."
     try:
         cursor = db.cursor()
 
@@ -208,6 +217,7 @@ def set_featured_album(
 
 def get_featured_album() -> Optional[dict]:
     """Get the current featured album."""
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute(
         """SELECT fa.*
@@ -234,6 +244,7 @@ def get_featured_album() -> Optional[dict]:
 
 def get_featured_log(lastfm_user: str) -> Optional[list[dict]]:
     """Get featured album history for a specific user."""
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute(
         """SELECT fa.* FROM featured_albums fa
@@ -258,6 +269,7 @@ def get_preferences(discord_id: int) -> Optional[dict]:
     if not discord_id:
         return None
 
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute("SELECT * FROM user_preferences WHERE user_id = ?", (discord_id,))
     result = cursor.fetchone()
@@ -275,6 +287,7 @@ def get_preferences(discord_id: int) -> Optional[dict]:
 
 def set_preferences(discord_id: int, preferences: dict) -> bool:
     """Set user preferences."""
+    assert db is not None, "Database not initialized. Call init() first."
     try:
         cursor = db.cursor()
         cursor.execute(
@@ -298,6 +311,7 @@ def set_preferences(discord_id: int, preferences: dict) -> bool:
 
 def get_is_special(discord_id: int) -> bool:
     """Get whether a user is special."""
+    assert db is not None, "Database not initialized. Call init() first."
     cursor = db.cursor()
     cursor.execute("SELECT is_special FROM users WHERE discord_id = ?", (discord_id,))
     result = cursor.fetchone()

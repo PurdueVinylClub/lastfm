@@ -174,7 +174,7 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
 
         featured_log = db.get_featured_log(lastfm_user)
 
-        await message.channel.send(embed=formatter.featurelog_embed(nickname, featured_log))
+        await message.channel.send(embed=formatter.featurelog_embed(nickname, featured_log or []))
 
     elif message.content.startswith("!f"):  # most recent featured
         album_details = db.get_featured_album()
@@ -187,6 +187,12 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
 
     elif message.content.startswith("!settings"):
         preferences = db.get_preferences(message.author.id)
+
+        if preferences is None:
+            await message.channel.send(
+                "You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>` and try again."
+            )
+            return
 
         await message.channel.send(embed=formatter.settings_embed(preferences))
 

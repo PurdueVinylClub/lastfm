@@ -9,6 +9,9 @@ dotenv.load_dotenv()
 API_KEY = os.environ.get("LASTFM_API_KEY")
 SECRET = os.environ.get("LASTFM_SECRET")
 
+if not API_KEY or not SECRET:
+    raise ValueError("LASTFM_API_KEY and LASTFM_SECRET must be set in .env file")
+
 auth_token = input("Paste your Last.fm Auth Token: ")
 
 signature = f"api_key{API_KEY}methodauth.getSessiontoken{auth_token}"
