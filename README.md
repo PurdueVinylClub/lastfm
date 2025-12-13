@@ -34,19 +34,20 @@ A Discord bot that randomly features Last.fm albums from community members, scro
 ```
 pvc_lastfm/
 ├── src/
-│   ├── __init__.py       # Package initialization
-│   ├── bot.py            # Discord bot frontend
-│   ├── main.py           # Core album selection logic
-│   ├── database.py       # Database operations
-│   └── formatter.py      # Discord embed formatting
+│   ├── __init__.py           # Package initialization
+│   ├── bot.py                # Discord bot frontend
+│   ├── main.py               # Core album selection logic
+│   ├── database.py           # Database operations
+│   └── formatter.py          # Discord embed formatting
 ├── scripts/
-│   ├── fetch_session.py  # Get Last.fm session key
-│   └── combine_usernames.py # Utility script
-├── data/                 # Data directory (created automatically)
-├── run_bot.py            # Entry point script
-├── requirements.txt      # Python dependencies
-├── .env.example          # Environment variables template
-└── README.md             # This file
+│   ├── fetch_session.py      # Get Last.fm session key
+│   └── combine_usernames.py  # Utility script
+├── data/                     # Data directory (created automatically)
+├── run_bot.py                # Entry point script
+├── pyproject.toml            # Python dependencies/project info
+├── .env.example              # Environment variables template
+├── .gitignore                # Ignored repository files
+└── README.md                 
 ```
 
 ## Contributing
