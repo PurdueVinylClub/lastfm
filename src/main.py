@@ -168,7 +168,8 @@ def main() -> tuple[dict | None, str]:
         response = requests.post(scrobble_url, data=post_body)
         if response.status_code != 200:
             print(
-                f"Warning: Failed to scrobble track: HTTP {response.status_code}", file=sys.stderr
+                f"Warning: Failed to scrobble track: HTTP {response.status_code}: {response.text}",
+                file=sys.stderr,
             )
         else:
             data = json.loads(response.text)
