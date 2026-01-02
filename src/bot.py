@@ -42,7 +42,7 @@ def start_track():
     scheduler = BackgroundScheduler()
 
     # Run every hour at xx:00:00
-    scheduler.add_job(main.main, "cron", hour="*")
+    scheduler.add_job(scheduled_feature, "cron", hour="*")
 
     # TODO change bot pfp to album art automatically
 
