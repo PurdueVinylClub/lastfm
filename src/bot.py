@@ -8,6 +8,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 
 import database as db
 import main
+import requests
 
 dotenv.load_dotenv()
 token = os.environ.get("DISCORD_TOKEN")
@@ -37,6 +38,15 @@ def scheduled_feature():
         featured_album["album_url"],
         featured_album["cover_url"],
     )
+
+    # download art
+    response = requests.get(featured_album["cover_url"])
+
+    with open('album_art.jpg', 'wb') as f:
+        f.write(response.content)
+
+    with open('album_art.jpg', 'rb') as f:
+        await client.user.edit(avatar=f.read())
 
 
 def start_track():
