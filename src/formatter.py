@@ -1,3 +1,5 @@
+from datetime import timezone
+
 import discord
 from dateutil.parser import parse
 
@@ -20,8 +22,7 @@ def featurelog_embed(name: str, featured_log: list) -> discord.Embed:
         for album in featured_log[0:20]:  # maximum of 20
             embed.add_field(
                 name=f"{album['artist_name']} - {album['album_name']}",
-                value=f"Featured on {parse(album['featured_at']).strftime('%m/%d %I:%M %p UTC')}",  # parse time from string then format -> ie "Featured on 9/12/25 6:00 PM"
-                # TODO timezone support
+                value=f"Featured on <t:{int(parse(album['featured_at']).replace(tzinfo=timezone.utc).timestamp())}:s>",
                 inline=False,
             )
     else:
