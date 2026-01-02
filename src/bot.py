@@ -19,6 +19,7 @@ intents.members = True
 
 client = discord.Client(intents=intents)
 
+
 def scheduled_feature():
     """Wrapper for scheduled job that handles the full feature flow."""
     (featured_album, print_buffer) = main.main()

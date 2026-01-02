@@ -94,7 +94,9 @@ def create_user(discord_id: int, lastfm_username: str) -> bool:
                 (discord_id, lastfm_username),
             )
 
-            cursor.execute("INSERT OR IGNORE INTO user_preferences (user_id) VALUES (?)", (discord_id,))
+            cursor.execute(
+                "INSERT OR IGNORE INTO user_preferences (user_id) VALUES (?)", (discord_id,)
+            )
 
             conn.commit()
             cursor.close()
