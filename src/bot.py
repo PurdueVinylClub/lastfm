@@ -19,6 +19,24 @@ intents.members = True
 
 client = discord.Client(intents=intents)
 
+def scheduled_feature():
+    """Wrapper for scheduled job that handles the full feature flow."""
+    (featured_album, print_buffer) = main.main()
+    if featured_album is None:
+        print("Scheduled run: Failed to feature an album", file=sys.stderr)
+        return
+
+    print(print_buffer)
+
+    db.set_featured_album(
+        featured_album["member_l"],
+        featured_album["artist_name"],
+        featured_album["artist_url"],
+        featured_album["album"],
+        featured_album["album_url"],
+        featured_album["cover_url"],
+    )
+
 
 def start_track():
     scheduler = BackgroundScheduler()
@@ -46,7 +64,6 @@ async def on_ready():
 
     print(print_buffer)
 
-    db.init()
     db.set_featured_album(
         featured_album["member_l"],
         featured_album["artist_name"],
