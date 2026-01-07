@@ -39,17 +39,13 @@ def main() -> tuple[dict | None, str]:
     # such as 09/10 9:45 AM
     print_buffer += time.strftime("%m/%d %I:%M %p", time.localtime()) + " "
 
-    # if sunday only dues payers
-    if datetime.datetime.now().weekday() == 6:
-        username = db.get_random_special_user()
-        if username is None:
-            print("Error: No special users found (Sunday mode)", file=sys.stderr)
-            return None, ""
-    else:
-        username = db.get_random_user()
-        if username is None:
-            print("Error: No users found in database", file=sys.stderr)
-            return None, ""
+    # on sundays, special users (dues payers) are pulled twice as often
+    # but non-special users are still in the lottery pool
+    is_sunday = datetime.datetime.now().weekday() == 6
+    username = db.get_random_user(double_special_chance=is_sunday)
+    if username is None:
+        print("Error: No users found in database", file=sys.stderr)
+        return None, ""
 
     print_buffer += username
 

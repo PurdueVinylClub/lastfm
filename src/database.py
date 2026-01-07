@@ -138,17 +138,23 @@ def get_num_special_users() -> int:
         return result[0]
 
 
-# picks special users twice as often
-def get_random_user() -> Optional[str]:
-    """Get a random user."""
+def get_random_user(double_special_chance: bool = False) -> Optional[str]:
+    """Get a random user.
+
+    Args:
+        double_special_chance: If True, special users are picked twice as often.
+                               Used on Sundays for dues payers.
+    """
     num_users = get_num_users()
     num_special = get_num_special_users()
 
     if num_users == 0:
         return None
 
-    if num_special > 0 and random.random() < num_special / (num_users + num_special):
-        return get_random_special_user()
+    # On Sundays (double_special_chance=True), special users get 2x odds
+    if double_special_chance and num_special > 0:
+        if random.random() < num_special / (num_users + num_special):
+            return get_random_special_user()
 
     with get_connection() as conn:
         cursor = conn.cursor()
