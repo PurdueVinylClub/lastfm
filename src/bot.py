@@ -4,14 +4,15 @@ import sys
 
 import discord
 import dotenv
-from apscheduler.schedulers.background import BackgroundScheduler
+import requests
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import database as db
 import main
-import requests
 
 dotenv.load_dotenv()
 token = os.environ.get("DISCORD_TOKEN")
+notify_channel_id = os.environ.get("NOTIFY_CHANNEL_ID")
 
 # use discord.py to create frontend interface through discord
 intents = discord.Intents.default()
@@ -21,7 +22,37 @@ intents.members = True
 client = discord.Client(intents=intents)
 
 
-def scheduled_feature():
+async def send_notifications(featured_album: dict):
+    """Send notification to the configured channel when a user's album is featured."""
+    if not notify_channel_id:
+        return
+
+    discord_id = db.get_discord_id(featured_album["member_l"])
+    if not discord_id:
+        return
+
+    # Check if user wants notifications
+    preferences = db.get_preferences(discord_id)
+    if not preferences or not preferences.get("notify"):
+        return
+
+    channel = client.get_channel(int(notify_channel_id))
+    if channel is None or isinstance(channel, discord.abc.PrivateChannel):
+        print(f"Notification channel {notify_channel_id} not found or invalid", file=sys.stderr)
+        return
+
+    embed = formatter.featured_embed(featured_album)
+
+    try:
+        await channel.send(
+            content=f"<@{discord_id}> Your album has been featured!",
+            embed=embed,
+        )
+    except Exception as e:
+        print(f"Failed to send notification: {e}", file=sys.stderr)
+
+
+async def scheduled_feature():
     """Wrapper for scheduled job that handles the full feature flow."""
     (featured_album, print_buffer) = main.main()
     if featured_album is None:
@@ -48,12 +79,15 @@ def scheduled_feature():
     with open('album_art.jpg', 'rb') as f:
         await client.user.edit(avatar=f.read())
 
+    await send_notifications(featured_album)
+
 
 def start_track():
-    scheduler = BackgroundScheduler()
+    scheduler = AsyncIOScheduler()
 
     # Run every hour at xx:00:00
-    scheduler.add_job(scheduled_feature, "cron", hour="*")
+    # scheduler.add_job(scheduled_feature, "cron", hour="*")
+    scheduler.add_job(scheduled_feature, "cron", minute="*/5")
 
     # TODO change bot pfp to album art automatically
 
@@ -68,21 +102,7 @@ async def on_ready():
     start_track()
     print("Scheduler started...")
 
-    (featured_album, print_buffer) = main.main()
-    if featured_album is None:
-        print("Warning: Failed to feature an album on startup", file=sys.stderr)
-        return
-
-    print(print_buffer)
-
-    db.set_featured_album(
-        featured_album["member_l"],
-        featured_album["artist_name"],
-        featured_album["artist_url"],
-        featured_album["album"],
-        featured_album["album_url"],
-        featured_album["cover_url"],
-    )
+    await scheduled_feature()
 
 
 @client.event
