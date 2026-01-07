@@ -86,8 +86,7 @@ def start_track():
     scheduler = AsyncIOScheduler()
 
     # Run every hour at xx:00:00
-    # scheduler.add_job(scheduled_feature, "cron", hour="*")
-    scheduler.add_job(scheduled_feature, "cron", minute="*/5")
+    scheduler.add_job(scheduled_feature, "cron", hour="*")
 
     scheduler.start()
 
