@@ -89,8 +89,6 @@ def start_track():
     # scheduler.add_job(scheduled_feature, "cron", hour="*")
     scheduler.add_job(scheduled_feature, "cron", minute="*/5")
 
-    # TODO change bot pfp to album art automatically
-
     scheduler.start()
 
 
