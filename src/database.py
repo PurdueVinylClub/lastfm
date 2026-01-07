@@ -121,18 +121,28 @@ def delete_user(discord_id: int) -> bool:
 
 
 def get_num_users() -> int:
+    """Get number of users with tracking enabled."""
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM users")
+        cursor.execute(
+            """SELECT COUNT(*) FROM users u
+               JOIN user_preferences up ON u.discord_id = up.user_id
+               WHERE up.track = 1"""
+        )
         result = cursor.fetchone()
         cursor.close()
         return result[0]
 
 
 def get_num_special_users() -> int:
+    """Get number of special users with tracking enabled."""
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT COUNT(*) FROM users WHERE is_special = 1")
+        cursor.execute(
+            """SELECT COUNT(*) FROM users u
+               JOIN user_preferences up ON u.discord_id = up.user_id
+               WHERE u.is_special = 1 AND up.track = 1"""
+        )
         result = cursor.fetchone()
         cursor.close()
         return result[0]
@@ -158,18 +168,26 @@ def get_random_user(double_special_chance: bool = False) -> Optional[str]:
 
     with get_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT lastfm_username FROM users ORDER BY RANDOM() LIMIT 1")
+        cursor.execute(
+            """SELECT u.lastfm_username FROM users u
+               JOIN user_preferences up ON u.discord_id = up.user_id
+               WHERE up.track = 1
+               ORDER BY RANDOM() LIMIT 1"""
+        )
         result = cursor.fetchone()
         cursor.close()
         return result["lastfm_username"] if result else None
 
 
 def get_random_special_user() -> Optional[str]:
-    """Get a random special user."""
+    """Get a random special user with tracking enabled."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT lastfm_username FROM users WHERE is_special = 1 ORDER BY RANDOM() LIMIT 1"
+            """SELECT u.lastfm_username FROM users u
+               JOIN user_preferences up ON u.discord_id = up.user_id
+               WHERE u.is_special = 1 AND up.track = 1
+               ORDER BY RANDOM() LIMIT 1"""
         )
         result = cursor.fetchone()
         cursor.close()
