@@ -31,6 +31,7 @@ def main() -> tuple[dict | None, str]:
     SECRET = os.environ.get("LASTFM_SECRET")
 
     if API_KEY is None or SESSION_KEY is None or SECRET is None:
+        print("Error: Missing API credentials", file=sys.stderr)
         return None, ""
 
     print_buffer = ""
@@ -42,10 +43,12 @@ def main() -> tuple[dict | None, str]:
     if datetime.datetime.now().weekday() == 6:
         username = db.get_random_special_user()
         if username is None:
+            print("Error: No special users found (Sunday mode)", file=sys.stderr)
             return None, ""
     else:
         username = db.get_random_user()
         if username is None:
+            print("Error: No users found in database", file=sys.stderr)
             return None, ""
 
     print_buffer += username
@@ -62,6 +65,7 @@ def main() -> tuple[dict | None, str]:
     data = json.loads(response.text)
 
     if "topalbums" not in data:
+        print(f"Error: No topalbums in response: {data}", file=sys.stderr)
         return None, ""
 
     if "album" not in data["topalbums"] or not isinstance(data["topalbums"]["album"], list):
@@ -71,6 +75,7 @@ def main() -> tuple[dict | None, str]:
     top_albums = data["topalbums"]["album"][0:15]
 
     if len(top_albums) == 0:
+        print("Error: User has no top albums", file=sys.stderr)
         return None, ""
 
     # get random album
@@ -101,6 +106,7 @@ def main() -> tuple[dict | None, str]:
 
     # download album art
     if "album" not in data:
+        print(f"Error: No album info in response: {data}", file=sys.stderr)
         return None, ""
 
     # Try to get the largest image (usually index 3), fallback to smaller if not available
@@ -131,6 +137,7 @@ def main() -> tuple[dict | None, str]:
 
     if "tracks" in data["album"]:
         if "track" not in data["album"]["tracks"] or not data["album"]["tracks"]["track"]:
+            print("Error: Album has no tracks", file=sys.stderr)
             return None, ""
 
         time_now = int(time.time())
@@ -143,6 +150,7 @@ def main() -> tuple[dict | None, str]:
         elif isinstance(random_track, str):
             track_name = random_track
         else:
+            print(f"Error: Invalid track format: {random_track}", file=sys.stderr)
             return None, ""
 
         print_buffer += f" {track_name}"
