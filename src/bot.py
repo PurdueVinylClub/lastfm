@@ -203,19 +203,29 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
         await message.channel.send(help_text)
 
     elif message.content.startswith("!featuredlog"):
-        parts = message.content.split()
-        if len(parts) > 1:
-            lastfm_user = parts[1].strip()
-            nickname = lastfm_user
+        if message.mentions:
+            mentioned_user = message.mentions[0]
+            lastfm_user = db.get_lastfm_user(mentioned_user.id)
+            nickname = mentioned_user.display_name
+            if not lastfm_user:
+                await message.channel.send(
+                    f"{nickname} is not connected to a Last.fm account."
+                )
+                return
         else:
-            lastfm_user = db.get_lastfm_user(message.author.id)
-            nickname = message.author.display_name
+            parts = message.content.split()
+            if len(parts) > 1:
+                lastfm_user = parts[1].strip()
+                nickname = lastfm_user
+            else:
+                lastfm_user = db.get_lastfm_user(message.author.id)
+                nickname = message.author.display_name
 
-        if not lastfm_user:
-            await message.channel.send(
-                "You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>` and try again."
-            )
-            return
+            if not lastfm_user:
+                await message.channel.send(
+                    "You are not currently connected to a Last.fm account. Please connect your account with `!connect <lastfm_username>` and try again."
+                )
+                return
 
         featured_log = db.get_featured_log(lastfm_user)
 
