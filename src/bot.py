@@ -80,7 +80,7 @@ async def scheduled_feature():
         await client.user.edit(avatar=f.read())
 
     # Update bot status to show currently featured album
-    status_text = f"Featuring {featured_album['album']} from {featured_album['member_l']}"
+    status_text = f"Featuring \"{featured_album['album']}\" from {featured_album['member_l']}"
     await client.change_presence(activity=discord.Game(name=status_text))
 
     await send_notifications(featured_album)
