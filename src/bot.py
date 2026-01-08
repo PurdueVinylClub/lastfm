@@ -79,6 +79,10 @@ async def scheduled_feature():
     with open('album_art.jpg', 'rb') as f:
         await client.user.edit(avatar=f.read())
 
+    # Update bot status to show currently featured album
+    status_text = f"Featuring {featured_album['album']} from {featured_album['member_l']}"
+    await client.change_presence(activity=discord.Game(name=status_text))
+
     await send_notifications(featured_album)
 
 
