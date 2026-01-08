@@ -203,7 +203,10 @@ async def on_message(message):
 `!help` - Show this help message
 
 **How it works:**
-The bot randomly features albums from users' Last.fm top albums every hour and scrobbles a random track from the selected album."""
+The bot randomly features albums from users' Last.fm top albums every hour and scrobbles a random track from the selected album.
+
+**View all featured albums:**
+Check out the complete history of all featured albums at https://last.fm/user/purduevinylclub"""
         await message.channel.send(help_text)
 
     elif message.content.startswith("!featuredlog"):
