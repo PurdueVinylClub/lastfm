@@ -23,6 +23,17 @@ intents.members = True
 client = discord.Client(intents=intents)
 
 
+def is_special_member(member: discord.Member | None) -> bool:
+    """Check if a Discord member qualifies as a special (dues payer) user."""
+    if not member:
+        return False
+    if member.guild_permissions.administrator:
+        return True
+    if dues_payer_role_id:
+        return any(str(role.id) == dues_payer_role_id for role in member.roles)
+    return False
+
+
 async def send_notifications(featured_album: dict):
     """Send notification to the configured channel when a user's album is featured."""
     if not notify_channel_id:
@@ -129,7 +140,19 @@ async def on_message(message):
         lastfm_user = parts[1].strip()
 
         if db.set_lfm_discord_connection(message.author.id, lastfm_user):
-            await message.channel.send("Connected to Last.fm account: " + lastfm_user + ".")
+            # Check if user qualifies as a special (dues payer) user
+            member = message.guild.get_member(message.author.id) if message.guild else None
+            if is_special_member(member):
+                db.set_is_special(message.author.id, True)
+                preferences = db.get_preferences(message.author.id)
+                if preferences:
+                    preferences["double_track"] = True
+                    db.set_preferences(message.author.id, preferences)
+                await message.channel.send(
+                    f"Connected to Last.fm account: {lastfm_user}. You've been automatically registered as a dues payer!"
+                )
+            else:
+                await message.channel.send(f"Connected to Last.fm account: {lastfm_user}.")
         else:
             await message.channel.send(
                 "Failed to connect to Last.fm account. Please ping Avery and/or try again later."
@@ -146,18 +169,8 @@ async def on_message(message):
 
         if message.content == "!dues on":
             # Check if user has admin permissions or the dues payer role
-            has_permission = False
-            if message.guild:
-                member = message.guild.get_member(message.author.id)
-                if member:
-                    if member.guild_permissions.administrator:
-                        has_permission = True
-                    elif dues_payer_role_id:
-                        has_permission = any(
-                            str(role.id) == dues_payer_role_id for role in member.roles
-                        )
-
-            if not has_permission:
+            member = message.guild.get_member(message.author.id) if message.guild else None
+            if not is_special_member(member):
                 await message.channel.send(
                     "You don't have the required role to mark yourself as a dues payer."
                 )
