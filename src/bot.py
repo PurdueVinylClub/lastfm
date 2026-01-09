@@ -13,6 +13,7 @@ import main
 dotenv.load_dotenv()
 token = os.environ.get("DISCORD_TOKEN")
 notify_channel_id = os.environ.get("NOTIFY_CHANNEL_ID")
+dues_payer_role_id = os.environ.get("DUES_PAYER_ROLE_ID")
 
 # use discord.py to create frontend interface through discord
 intents = discord.Intents.default()
@@ -73,14 +74,14 @@ async def scheduled_feature():
     # download art
     response = requests.get(featured_album["cover_url"])
 
-    with open('album_art.jpg', 'wb') as f:
+    with open("album_art.jpg", "wb") as f:
         f.write(response.content)
 
-    with open('album_art.jpg', 'rb') as f:
+    with open("album_art.jpg", "rb") as f:
         await client.user.edit(avatar=f.read())
 
     # Update bot status to show currently featured album
-    status_text = f"Featuring \"{featured_album['album']}\" from {featured_album['member_l']}"
+    status_text = f'Featuring "{featured_album["album"]}" from {featured_album["member_l"]}'
     await client.change_presence(activity=discord.Game(name=status_text))
 
     await send_notifications(featured_album)
@@ -143,9 +144,37 @@ async def on_message(message):
             )
             return
 
+        if message.content == "!dues on":
+            # Check if user has admin permissions or the dues payer role
+            has_permission = False
+            if message.guild:
+                member = message.guild.get_member(message.author.id)
+                if member:
+                    if member.guild_permissions.administrator:
+                        has_permission = True
+                    elif dues_payer_role_id:
+                        has_permission = any(
+                            str(role.id) == dues_payer_role_id for role in member.roles
+                        )
+
+            if not has_permission:
+                await message.channel.send(
+                    "You don't have the required role to mark yourself as a dues payer."
+                )
+                return
+
+            db.set_is_special(message.author.id, True)
+            preferences["double_track"] = True
+            db.set_preferences(message.author.id, preferences)
+            await message.channel.send(
+                "You are now marked as a dues payer and eligible to be featured extra on Sundays."
+            )
+            return
+
+        # For other dues commands, require being a dues payer
         if not db.get_is_special(message.author.id):
             await message.channel.send(
-                "You must be a dues payer to use this command. If you have paid dues, please ping Avery to add you to the database."
+                "You must be a dues payer to use this command. If you have paid dues, run `!dues on` to register."
             )
             return
 
@@ -160,15 +189,10 @@ async def on_message(message):
                 )
             return
 
-        if message.content == "!dues on":
-            preferences["double_track"] = True
-            await message.channel.send("You are now eligible to be featured extra.")
-
         if message.content == "!dues off":
             preferences["double_track"] = False
+            db.set_preferences(message.author.id, preferences)
             await message.channel.send("You are no longer eligible to be featured extra.")
-
-        db.set_preferences(message.author.id, preferences)
 
     elif message.content.startswith("!disconnect"):
         if not db.get_lastfm_user(message.author.id):
@@ -215,9 +239,7 @@ Check out the complete history of all featured albums at https://last.fm/user/pu
             lastfm_user = db.get_lastfm_user(mentioned_user.id)
             nickname = mentioned_user.display_name
             if not lastfm_user:
-                await message.channel.send(
-                    f"{nickname} is not connected to a Last.fm account."
-                )
+                await message.channel.send(f"{nickname} is not connected to a Last.fm account.")
                 return
         else:
             parts = message.content.split()

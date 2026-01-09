@@ -355,3 +355,20 @@ def get_is_special(discord_id: int) -> bool:
         result = cursor.fetchone()
         cursor.close()
         return result["is_special"] if result else False
+
+
+def set_is_special(discord_id: int, is_special: bool) -> bool:
+    """Set whether a user is special (dues payer)."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE users SET is_special = ? WHERE discord_id = ?",
+                (is_special, discord_id),
+            )
+            conn.commit()
+            cursor.close()
+            return True
+    except Exception as e:
+        print(f"Error setting is_special: {e}")
+        return False
