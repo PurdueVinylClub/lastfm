@@ -149,10 +149,12 @@ async def on_message(message):
                     preferences["double_track"] = True
                     db.set_preferences(message.author.id, preferences)
                 await message.channel.send(
-                    f"Connected to Last.fm account: {lastfm_user}. You've been automatically registered as a dues payer!"
+                    f"Connected to Last.fm account: {lastfm_user}. You've been automatically registered as a dues payer! Tip: if you want to be notified every time you're featured, run `!notify on`."
                 )
             else:
-                await message.channel.send(f"Connected to Last.fm account: {lastfm_user}.")
+                await message.channel.send(
+                    f"Connected to Last.fm account: {lastfm_user}. Tip: if you want to be notified every time you're featured, run `!notify on`."
+                )
         else:
             await message.channel.send(
                 "Failed to connect to Last.fm account. Please ping Avery and/or try again later."
