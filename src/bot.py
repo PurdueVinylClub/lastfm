@@ -115,8 +115,6 @@ async def on_ready():
     start_track()
     print("Scheduler started...")
 
-    await scheduled_feature()
-
 
 @client.event
 async def on_message(message):
