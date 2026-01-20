@@ -246,7 +246,7 @@ The bot randomly features albums from users' Last.fm top albums every hour and s
 Check out the complete history of all featured albums at https://last.fm/user/purduevinylclub"""
         await message.channel.send(help_text)
 
-    elif message.content.startswith("!featuredlog"):
+    elif message.content.startswith("!featuredlog") or message.content == "!fl":
         if message.mentions:
             mentioned_user = message.mentions[0]
             lastfm_user = db.get_lastfm_user(mentioned_user.id)
