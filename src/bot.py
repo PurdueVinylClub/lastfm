@@ -274,10 +274,12 @@ Check out the complete history of all featured albums at https://last.fm/user/pu
 
         if lastfm_user == "global" or lastfm_user == "all":
             featured_log = db.get_global_featured_log()
+            await message.channel.send(embed=formatter.globalfeaturelog_embed(featured_log or []))
         else:
             featured_log = db.get_featured_log(lastfm_user)
-
-        await message.channel.send(embed=formatter.featurelog_embed(nickname, featured_log or []))
+            await message.channel.send(
+                embed=formatter.featurelog_embed(nickname, featured_log or [])
+            )
 
     elif message.content.startswith("!f"):  # most recent featured
         album_details = db.get_featured_album()
