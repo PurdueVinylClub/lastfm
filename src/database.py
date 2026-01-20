@@ -280,6 +280,23 @@ def get_featured_album() -> Optional[dict]:
         }
 
 
+def get_global_featured_log() -> Optional[list[dict]]:
+    """Get featured album history for everyone."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            """SELECT fa.* FROM featured_albums fa
+               ORDER BY fa.featured_at DESC""",
+        )
+        results = cursor.fetchall()
+        cursor.close()
+
+        if not results:
+            return None
+
+        return [dict(row) for row in results]
+
+
 def get_featured_log(lastfm_user: str) -> Optional[list[dict]]:
     """Get featured album history for a specific user."""
     with get_connection() as conn:
