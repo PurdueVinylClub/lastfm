@@ -19,7 +19,7 @@ def featurelog_embed(name: str, featured_log: list) -> discord.Embed:
     embed.title = f"{name}'s featured history:"
 
     if featured_log:
-        for album in featured_log[0:20]:  # maximum of 20
+        for album in featured_log[0:10]:  # maximum of 10
             embed.add_field(
                 name=f"{album['artist_name']} - {album['album_name']}",
                 value=f"Featured on <t:{int(parse(album['featured_at']).replace(tzinfo=timezone.utc).timestamp())}:s>",
