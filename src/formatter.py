@@ -14,6 +14,23 @@ def featured_embed(album_details: dict) -> discord.Embed:
     return embed
 
 
+def globalfeaturelog_embed(featured_log: list) -> discord.Embed:
+    embed = discord.Embed()
+    embed.title = "Global featured history:"
+
+    if featured_log:
+        for album in featured_log[0:10]:  # maximum of 10
+            embed.add_field(
+                name=f"{album['artist_name']} - {album['album_name']}",
+                value=f"Weekly albums from {album['lastfm_username']}\nFeatured on <t:{int(parse(album['featured_at']).replace(tzinfo=timezone.utc).timestamp())}:s>",
+                inline=False,
+            )
+    else:
+        embed.description = "Can't find any scrobbles. Has something gone wrong?"
+
+    return embed
+
+
 def featurelog_embed(name: str, featured_log: list) -> discord.Embed:
     embed = discord.Embed()
     embed.title = f"{name}'s featured history:"
