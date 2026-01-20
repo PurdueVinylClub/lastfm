@@ -43,11 +43,6 @@ async def send_notifications(featured_album: dict):
     if not discord_id:
         return
 
-    # Check if user wants notifications
-    preferences = db.get_preferences(discord_id)
-    if not preferences or not preferences.get("notify"):
-        return
-
     channel = client.get_channel(int(notify_channel_id))
     if channel is None or isinstance(channel, discord.abc.PrivateChannel):
         print(f"Notification channel {notify_channel_id} not found or invalid", file=sys.stderr)
@@ -56,10 +51,18 @@ async def send_notifications(featured_album: dict):
     embed = formatter.featured_embed(featured_album)
 
     try:
-        await channel.send(
-            content=f"<@{discord_id}> Your album has been featured!",
-            embed=embed,
-        )
+        # Check if user wants notifications
+        preferences = db.get_preferences(discord_id)
+        if not preferences or not preferences.get("notify"):
+            await channel.send(
+                content=f"{featured_album['member_l']}'s album has been featured!",
+                embed=embed,
+            )
+        else:
+            await channel.send(
+                content=f"<@{discord_id}> Your album has been featured!",
+                embed=embed,
+            )
     except Exception as e:
         print(f"Failed to send notification: {e}", file=sys.stderr)
 
