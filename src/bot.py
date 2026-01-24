@@ -86,13 +86,16 @@ async def scheduled_feature():
     )
 
     # download art
-    response = requests.get(featured_album["cover_url"])
+    try:
+        response = requests.get(featured_album["cover_url"])
 
-    with open("album_art.jpg", "wb") as f:
-        f.write(response.content)
+        with open("album_art.jpg", "wb") as f:
+            f.write(response.content)
 
-    with open("album_art.jpg", "rb") as f:
-        await client.user.edit(avatar=f.read())
+        with open("album_art.jpg", "rb") as f:
+            await client.user.edit(avatar=f.read())
+    except Exception as e:
+        print(f"Error: {e}")
 
     # Update bot status to show currently featured album
     status_text = f'Featuring "{featured_album["album"]}" from {featured_album["member_l"]}'
