@@ -389,3 +389,15 @@ def set_is_special(discord_id: int, is_special: bool) -> bool:
     except Exception as e:
         print(f"Error setting is_special: {e}")
         return False
+
+
+# Get full featured log history
+def get_fl_history() -> list[list[str]]:
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT fa.*, COALESCE(u.is_special, 0) as dues_payer FROM featured_albums fa LEFT JOIN users u on fa.lastfm_username = u.lastfm_username"
+        )
+        result = cursor.fetchall()
+        cursor.close()
+        return result

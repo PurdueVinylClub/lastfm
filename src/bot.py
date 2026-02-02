@@ -1,4 +1,5 @@
 import formatter
+import io
 import os
 import sys
 
@@ -363,6 +364,18 @@ Check out the complete history of all featured albums at https://last.fm/user/pu
             await message.channel.send("You will no longer be notified when you are featured.")
 
         db.set_preferences(message.author.id, preferences)
+
+    elif message.content.startswith("!getreport"):
+        report = db.get_fl_history()
+        rows = ["|".join([str(elem) for elem in row]) for row in report]  # python jank
+        res = "\n".join(rows)
+
+        # encode as bytes for discord API
+        my_bytes = res.encode("utf-8")
+        my_bytesio = io.BytesIO(my_bytes)
+
+        discord_file = discord.File(my_bytesio, "report.txt")
+        await message.channel.send(file=discord_file)
 
 
 if not token:
