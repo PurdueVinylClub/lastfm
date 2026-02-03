@@ -280,13 +280,15 @@ def get_featured_album() -> Optional[dict]:
         }
 
 
-def get_global_featured_log() -> Optional[list[dict]]:
+def get_global_featured_log(limit: int = 10, offset: int = 0) -> Optional[list[dict]]:
     """Get featured album history for everyone."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT fa.* FROM featured_albums fa
-               ORDER BY fa.featured_at DESC""",
+               ORDER BY fa.featured_at DESC
+               LIMIT ? OFFSET ?""",
+            (limit, offset),
         )
         results = cursor.fetchall()
         cursor.close()
@@ -297,15 +299,26 @@ def get_global_featured_log() -> Optional[list[dict]]:
         return [dict(row) for row in results]
 
 
-def get_featured_log(lastfm_user: str) -> Optional[list[dict]]:
+def get_global_featured_log_count() -> int:
+    """Get total count of all featured albums."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM featured_albums")
+        result = cursor.fetchone()
+        cursor.close()
+        return result[0]
+
+
+def get_featured_log(lastfm_user: str, limit: int = 10, offset: int = 0) -> Optional[list[dict]]:
     """Get featured album history for a specific user."""
     with get_connection() as conn:
         cursor = conn.cursor()
         cursor.execute(
             """SELECT fa.* FROM featured_albums fa
                WHERE fa.lastfm_username = ?
-               ORDER BY fa.featured_at DESC""",
-            (lastfm_user,),
+               ORDER BY fa.featured_at DESC
+               LIMIT ? OFFSET ?""",
+            (lastfm_user, limit, offset),
         )
         results = cursor.fetchall()
         cursor.close()
@@ -314,6 +327,19 @@ def get_featured_log(lastfm_user: str) -> Optional[list[dict]]:
             return None
 
         return [dict(row) for row in results]
+
+
+def get_featured_log_count(lastfm_user: str) -> int:
+    """Get total count of featured albums for a specific user."""
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT COUNT(*) FROM featured_albums WHERE lastfm_username = ?",
+            (lastfm_user,),
+        )
+        result = cursor.fetchone()
+        cursor.close()
+        return result[0]
 
 
 # preferences functions

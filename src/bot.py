@@ -35,6 +35,55 @@ def is_special_member(member: discord.Member | None) -> bool:
     return False
 
 
+ITEMS_PER_PAGE = 10
+
+
+class FeatureLogView(discord.ui.View):
+    """Pagination view for featured log embeds."""
+
+    def __init__(
+        self, lastfm_user: str | None, nickname: str, total_count: int, is_global: bool = False
+    ):
+        super().__init__(timeout=180)  # 3 minute timeout
+        self.lastfm_user = lastfm_user
+        self.nickname = nickname
+        self.is_global = is_global
+        self.current_page = 1
+        self.total_pages = max(1, (total_count + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE)
+        self.update_buttons()
+
+    def update_buttons(self):
+        self.prev_button.disabled = self.current_page <= 1
+        self.next_button.disabled = self.current_page >= self.total_pages
+
+    def get_embed(self) -> discord.Embed:
+        offset = (self.current_page - 1) * ITEMS_PER_PAGE
+        if self.is_global:
+            featured_log = db.get_global_featured_log(limit=ITEMS_PER_PAGE, offset=offset)
+            return formatter.globalfeaturelog_embed(
+                featured_log or [], self.current_page, self.total_pages
+            )
+        else:
+            featured_log = db.get_featured_log(
+                self.lastfm_user, limit=ITEMS_PER_PAGE, offset=offset
+            )
+            return formatter.featurelog_embed(
+                self.nickname, featured_log or [], self.current_page, self.total_pages
+            )
+
+    @discord.ui.button(label="◀ Prev", style=discord.ButtonStyle.secondary)
+    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_page -= 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+    @discord.ui.button(label="Next ▶", style=discord.ButtonStyle.secondary)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.current_page += 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.get_embed(), view=self)
+
+
 async def send_notifications(featured_album: dict):
     """Send notification to the configured channel when a user's album is featured."""
     if not notify_channel_id:
@@ -277,12 +326,17 @@ Check out the complete history of all featured albums at https://last.fm/user/pu
                 return
 
         if lastfm_user == "global" or lastfm_user == "all":
-            featured_log = db.get_global_featured_log()
-            await message.channel.send(embed=formatter.globalfeaturelog_embed(featured_log or []))
-        else:
-            featured_log = db.get_featured_log(lastfm_user)
+            total_count = db.get_global_featured_log_count()
+            view = FeatureLogView(None, "", total_count, is_global=True)
+            # Only show buttons if more than one page
             await message.channel.send(
-                embed=formatter.featurelog_embed(nickname, featured_log or [])
+                embed=view.get_embed(), view=view if view.total_pages > 1 else None
+            )
+        else:
+            total_count = db.get_featured_log_count(lastfm_user)
+            view = FeatureLogView(lastfm_user, nickname, total_count, is_global=False)
+            await message.channel.send(
+                embed=view.get_embed(), view=view if view.total_pages > 1 else None
             )
 
     elif message.content.startswith("!f"):  # most recent featured

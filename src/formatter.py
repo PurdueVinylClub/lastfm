@@ -14,34 +14,42 @@ def featured_embed(album_details: dict) -> discord.Embed:
     return embed
 
 
-def globalfeaturelog_embed(featured_log: list) -> discord.Embed:
+def globalfeaturelog_embed(
+    featured_log: list, page: int = 1, total_pages: int = 1
+) -> discord.Embed:
     embed = discord.Embed()
     embed.title = "Global featured history:"
 
     if featured_log:
-        for album in featured_log[0:10]:  # maximum of 10
+        for album in featured_log[:25]:  # Discord embeds support max 25 fields
             embed.add_field(
                 name=f"{album['artist_name']} - {album['album_name']}",
                 value=f"Weekly albums from {album['lastfm_username']}\nFeatured on <t:{int(parse(album['featured_at']).replace(tzinfo=timezone.utc).timestamp())}:s>",
                 inline=False,
             )
+        if total_pages > 1:
+            embed.set_footer(text=f"Page {page} of {total_pages}")
     else:
         embed.description = "Can't find any scrobbles. Has something gone wrong?"
 
     return embed
 
 
-def featurelog_embed(name: str, featured_log: list) -> discord.Embed:
+def featurelog_embed(
+    name: str, featured_log: list, page: int = 1, total_pages: int = 1
+) -> discord.Embed:
     embed = discord.Embed()
     embed.title = f"{name}'s featured history:"
 
     if featured_log:
-        for album in featured_log[0:10]:  # maximum of 10
+        for album in featured_log[:25]:  # Discord embeds support max 25 fields
             embed.add_field(
                 name=f"{album['artist_name']} - {album['album_name']}",
                 value=f"Featured on <t:{int(parse(album['featured_at']).replace(tzinfo=timezone.utc).timestamp())}:s>",
                 inline=False,
             )
+        if total_pages > 1:
+            embed.set_footer(text=f"Page {page} of {total_pages}")
     else:
         embed.description = """
         Sorry, you haven't been featured yet...
