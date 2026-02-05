@@ -64,6 +64,8 @@ class FeatureLogView(discord.ui.View):
                 featured_log or [], self.current_page, self.total_pages
             )
         else:
+            if self.lastfm_user is None:
+                raise ValueError("lastfm_user is required for non-global feature log")
             featured_log = db.get_featured_log(
                 self.lastfm_user, limit=ITEMS_PER_PAGE, offset=offset
             )
@@ -94,7 +96,7 @@ async def send_notifications(featured_album: dict):
         return
 
     channel = client.get_channel(int(notify_channel_id))
-    if channel is None or isinstance(channel, discord.abc.PrivateChannel):
+    if channel is None or not isinstance(channel, discord.TextChannel):
         print(f"Notification channel {notify_channel_id} not found or invalid", file=sys.stderr)
         return
 
@@ -143,6 +145,8 @@ async def scheduled_feature():
             f.write(response.content)
 
         with open("album_art.jpg", "rb") as f:
+            if client.user is None:
+                raise RuntimeError("client.user is not available")
             await client.user.edit(avatar=f.read())
     except Exception as e:
         print(f"Error: {e}")
