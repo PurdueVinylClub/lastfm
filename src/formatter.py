@@ -15,7 +15,11 @@ def featured_embed(album_details: dict) -> discord.Embed:
 
 
 def globalfeaturelog_embed(
-    featured_log: list, page: int = 1, total_pages: int = 1
+    featured_log: list,
+    page: int = 1,
+    total_pages: int = 1,
+    total_count: int = 0,
+    items_per_page: int = 10,
 ) -> discord.Embed:
     embed = discord.Embed()
     embed.title = "Global featured history:"
@@ -27,8 +31,12 @@ def globalfeaturelog_embed(
                 value=f"Weekly albums from {album['lastfm_username']}\nFeatured on <t:{int(parse(album['featured_at']).replace(tzinfo=timezone.utc).timestamp())}:s>",
                 inline=False,
             )
-        if total_pages > 1:
-            embed.set_footer(text=f"Page {page} of {total_pages}")
+        if total_count > 0:
+            start = (page - 1) * items_per_page + 1
+            end = min(start + len(featured_log) - 1, total_count)
+            embed.set_footer(
+                text=f"Page {page} of {total_pages} | Showing {start}-{end} of {total_count}"
+            )
     else:
         embed.description = "Can't find any scrobbles. Has something gone wrong?"
 
@@ -36,7 +44,12 @@ def globalfeaturelog_embed(
 
 
 def featurelog_embed(
-    name: str, featured_log: list, page: int = 1, total_pages: int = 1
+    name: str,
+    featured_log: list,
+    page: int = 1,
+    total_pages: int = 1,
+    total_count: int = 0,
+    items_per_page: int = 10,
 ) -> discord.Embed:
     embed = discord.Embed()
     embed.title = f"{name}'s featured history:"
@@ -48,8 +61,12 @@ def featurelog_embed(
                 value=f"Featured on <t:{int(parse(album['featured_at']).replace(tzinfo=timezone.utc).timestamp())}:s>",
                 inline=False,
             )
-        if total_pages > 1:
-            embed.set_footer(text=f"Page {page} of {total_pages}")
+        if total_count > 0:
+            start = (page - 1) * items_per_page + 1
+            end = min(start + len(featured_log) - 1, total_count)
+            embed.set_footer(
+                text=f"Page {page} of {total_pages} | Showing {start}-{end} of {total_count}"
+            )
     else:
         embed.description = """
         Sorry, you haven't been featured yet...

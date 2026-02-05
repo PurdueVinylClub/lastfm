@@ -48,6 +48,7 @@ class FeatureLogView(discord.ui.View):
         self.lastfm_user = lastfm_user
         self.nickname = nickname
         self.is_global = is_global
+        self.total_count = total_count
         self.current_page = 1
         self.total_pages = max(1, (total_count + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE)
         self.update_buttons()
@@ -61,7 +62,11 @@ class FeatureLogView(discord.ui.View):
         if self.is_global:
             featured_log = db.get_global_featured_log(limit=ITEMS_PER_PAGE, offset=offset)
             return formatter.globalfeaturelog_embed(
-                featured_log or [], self.current_page, self.total_pages
+                featured_log or [],
+                self.current_page,
+                self.total_pages,
+                self.total_count,
+                ITEMS_PER_PAGE,
             )
         else:
             if self.lastfm_user is None:
@@ -70,7 +75,12 @@ class FeatureLogView(discord.ui.View):
                 self.lastfm_user, limit=ITEMS_PER_PAGE, offset=offset
             )
             return formatter.featurelog_embed(
-                self.nickname, featured_log or [], self.current_page, self.total_pages
+                self.nickname,
+                featured_log or [],
+                self.current_page,
+                self.total_pages,
+                self.total_count,
+                ITEMS_PER_PAGE,
             )
 
     @discord.ui.button(label="◀ Prev", style=discord.ButtonStyle.secondary)
