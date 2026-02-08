@@ -2,6 +2,7 @@ import formatter
 import io
 import os
 import sys
+from datetime import datetime
 
 import discord
 import dotenv
@@ -22,6 +23,10 @@ intents.message_content = True
 intents.members = True
 
 client = discord.Client(intents=intents)
+
+# adjusting for UTC
+FIRST_FEATURE_HOUR = 12 # 7am EST
+LAST_FEATURE_HOUR = 5 # 12am EST
 
 
 def is_special_member(member: discord.Member | None) -> bool:
@@ -129,8 +134,41 @@ async def send_notifications(featured_album: dict):
         print(f"Failed to send notification: {e}", file=sys.stderr)
 
 
+async def send_message(msg: str):
+    """Send a message to the configured channel."""
+    if not notify_channel_id:
+        return
+
+    channel = client.get_channel(int(notify_channel_id))
+    if channel is None or not isinstance(channel, discord.TextChannel):
+        print(f"Notification channel {notify_channel_id} not found or invalid", file=sys.stderr)
+        return
+
+    try:
+        await channel.send(msg)
+    except Exception as e:
+        print(f"Failed to send message: {e}", file=sys.stderr)
+
+
+async def send_goodnight_message():
+    """Send a nightly sign-off message after the final featured album."""
+    await send_message(
+        "\\*yawn\\* What a long day of featuring albums... I'm getting sleepy 😴 Goodnight!"
+    )
+
+
+async def send_goodmorning_message():
+    """Send a message in the morning before the first featured album."""
+    await send_message(
+        "Ahh, I feel well-rested. Time to get back to work! Featured album, coming right up...!"
+    )
+
+
 async def scheduled_feature():
     """Wrapper for scheduled job that handles the full feature flow."""
+    if datetime.now().hour == FIRST_FEATURE_HOUR:
+        await send_goodmorning_message()
+
     (featured_album, print_buffer) = main.main()
     if featured_album is None:
         print("Scheduled run: Failed to feature an album", file=sys.stderr)
@@ -166,13 +204,19 @@ async def scheduled_feature():
     await client.change_presence(activity=discord.Game(name=status_text))
 
     await send_notifications(featured_album)
+    if datetime.now().hour == LAST_FEATURE_HOUR:
+        await send_goodnight_message()
 
 
 def start_track():
     scheduler = AsyncIOScheduler()
 
-    # Run every hour at xx:00:00
-    scheduler.add_job(scheduled_feature, "cron", hour="*")
+    # Run every hour. Goodmorning at FIRST_FEATURE_HOUR, goodnight at LAST_FEATURE_HOUR.
+    scheduler.add_job(
+        scheduled_feature,
+        "cron",
+        hour="0-{FIRST_FEATURE_HOUR},{LAST_FEATURE_HOUR}-23",
+    )
 
     scheduler.start()
 
