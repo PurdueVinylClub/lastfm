@@ -215,7 +215,7 @@ def start_track():
     scheduler.add_job(
         scheduled_feature,
         "cron",
-        hour=f"0-{FIRST_FEATURE_HOUR},{LAST_FEATURE_HOUR}-23",
+        hour=f"0-{LAST_FEATURE_HOUR},{FIRST_FEATURE_HOUR}-23",
     )
 
     scheduler.start()
