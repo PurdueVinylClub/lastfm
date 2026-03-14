@@ -25,8 +25,8 @@ intents.members = True
 client = discord.Client(intents=intents)
 
 # adjusting for UTC
-FIRST_FEATURE_HOUR = 12 # 7am EST
-LAST_FEATURE_HOUR = 5 # 12am EST
+FIRST_FEATURE_HOUR = 11 # 7am EST
+LAST_FEATURE_HOUR = 4 # 12am EST
 
 
 def is_special_member(member: discord.Member | None) -> bool:
