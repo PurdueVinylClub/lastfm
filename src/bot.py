@@ -1,16 +1,23 @@
+import asyncio
 import io
+import json
 import os
+import socket
 import sys
 from datetime import datetime
 
 import discord
 import dotenv
 import requests
+import urllib3
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import database as db
 import formatter
 import main
+
+MAX_RETRIES = 3
+RETRY_DELAY = 2
 
 dotenv.load_dotenv()
 token = os.environ.get("DISCORD_TOKEN")
@@ -164,18 +171,8 @@ async def send_goodmorning_message():
     )
 
 
-async def scheduled_feature():
-    """Wrapper for scheduled job that handles the full feature flow."""
-    if datetime.now().hour == FIRST_FEATURE_HOUR:
-        await send_goodmorning_message()
-
-    (featured_album, print_buffer) = main.main()
-    if featured_album is None:
-        print("Scheduled run: Failed to feature an album", file=sys.stderr)
-        return
-
-    print(print_buffer)
-
+async def do_feature(featured_album: dict):
+    """Handle the full feature flow for a successfully selected album."""
     db.set_featured_album(
         featured_album["member_l"],
         featured_album["artist_name"],
@@ -204,6 +201,53 @@ async def scheduled_feature():
     await client.change_presence(activity=discord.Game(name=status_text))
 
     await send_notifications(featured_album)
+
+
+async def scheduled_feature():
+    """Wrapper for scheduled job with retries, and "good morning"/"goodnight" message."""
+    if datetime.now().hour == FIRST_FEATURE_HOUR:
+        await send_goodmorning_message()
+
+    featured = False
+    retry_count = 0
+    while retry_count < MAX_RETRIES:
+        try:
+            (featured_album, print_buffer) = main.main()
+            if featured_album is None:  # non-retryable error
+                print("Scheduled run: Failed to feature an album", file=sys.stderr)
+                break
+
+            print(print_buffer)
+            await do_feature(featured_album)
+            featured = True
+            break
+        except (
+            ConnectionError,
+            socket.gaierror,
+            urllib3.exceptions.NameResolutionError,
+        ) as e:
+            print(
+                f"Scheduled run: ConnectionError/socket.gaierror: {e}, aborting...",
+                file=sys.stderr,
+            )
+            break
+        except (requests.RequestException, json.JSONDecodeError) as e:
+            retry_count += 1
+            print(
+                f"Scheduled run: Request/JSON error (attempt {retry_count}/{MAX_RETRIES}): {e}",
+                file=sys.stderr,
+            )
+            if retry_count >= MAX_RETRIES:
+                print("Scheduled run: Max retries reached, aborting...", file=sys.stderr)
+                break
+            await asyncio.sleep(RETRY_DELAY)
+        except Exception as e:
+            print(f"Scheduled run: Unexpected error: {e}", file=sys.stderr)
+            break
+
+    if not featured:
+        await send_message("I wasn't able to feature an album this hour. I'll try again next hour!")
+
     if datetime.now().hour == LAST_FEATURE_HOUR:
         await send_goodnight_message()
 
