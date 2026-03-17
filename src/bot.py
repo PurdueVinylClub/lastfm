@@ -1,4 +1,3 @@
-import formatter
 import io
 import os
 import sys
@@ -10,6 +9,7 @@ import requests
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 import database as db
+import formatter
 import main
 
 dotenv.load_dotenv()
@@ -25,8 +25,8 @@ intents.members = True
 client = discord.Client(intents=intents)
 
 # adjusting for UTC
-FIRST_FEATURE_HOUR = 11 # 7am EST
-LAST_FEATURE_HOUR = 4 # 12am EST
+FIRST_FEATURE_HOUR = 11  # 7am EST
+LAST_FEATURE_HOUR = 4  # 12am EST
 
 
 def is_special_member(member: discord.Member | None) -> bool:

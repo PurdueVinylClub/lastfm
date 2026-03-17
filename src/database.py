@@ -12,7 +12,6 @@ import sqlite3
 from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Optional
 
 # Get data directory from environment or use default
 DATA_DIR = Path(os.environ.get("PVC_DATA_DIR", "./data"))
@@ -148,7 +147,7 @@ def get_num_special_users() -> int:
         return result[0]
 
 
-def get_random_user(double_special_chance: bool = False) -> Optional[str]:
+def get_random_user(double_special_chance: bool = False) -> str | None:
     """Get a random user.
 
     Args:
@@ -179,7 +178,7 @@ def get_random_user(double_special_chance: bool = False) -> Optional[str]:
         return result["lastfm_username"] if result else None
 
 
-def get_random_special_user() -> Optional[str]:
+def get_random_special_user() -> str | None:
     """Get a random special user with tracking enabled."""
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -194,7 +193,7 @@ def get_random_special_user() -> Optional[str]:
         return result["lastfm_username"] if result else None
 
 
-def get_lastfm_user(discord_id: int) -> Optional[str]:
+def get_lastfm_user(discord_id: int) -> str | None:
     """Get Last.fm username by Discord ID."""
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -204,7 +203,7 @@ def get_lastfm_user(discord_id: int) -> Optional[str]:
         return result["lastfm_username"] if result else None
 
 
-def get_discord_id(lastfm_user: str) -> Optional[int]:
+def get_discord_id(lastfm_user: str) -> int | None:
     """Get Discord ID by Last.fm username."""
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -253,7 +252,7 @@ def set_featured_album(
         return False
 
 
-def get_featured_album() -> Optional[dict]:
+def get_featured_album() -> dict | None:
     """Get the current featured album."""
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -280,7 +279,7 @@ def get_featured_album() -> Optional[dict]:
         }
 
 
-def get_global_featured_log(limit: int = 10, offset: int = 0) -> Optional[list[dict]]:
+def get_global_featured_log(limit: int = 10, offset: int = 0) -> list[dict] | None:
     """Get featured album history for everyone."""
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -309,7 +308,7 @@ def get_global_featured_log_count() -> int:
         return result[0]
 
 
-def get_featured_log(lastfm_user: str, limit: int = 10, offset: int = 0) -> Optional[list[dict]]:
+def get_featured_log(lastfm_user: str, limit: int = 10, offset: int = 0) -> list[dict] | None:
     """Get featured album history for a specific user."""
     with get_connection() as conn:
         cursor = conn.cursor()
@@ -345,7 +344,7 @@ def get_featured_log_count(lastfm_user: str) -> int:
 # preferences functions
 
 
-def get_preferences(discord_id: int) -> Optional[dict]:
+def get_preferences(discord_id: int) -> dict | None:
     """Get user preferences by Discord ID."""
     if not discord_id:
         return None
