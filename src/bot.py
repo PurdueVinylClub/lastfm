@@ -231,22 +231,19 @@ async def scheduled_feature():
                 file=sys.stderr,
             )
             break
-        except (requests.RequestException, json.JSONDecodeError) as e:
+        except Exception as e:
             retry_count += 1
             print(
-                f"Scheduled run: Request/JSON error (attempt {retry_count}/{MAX_RETRIES}): {e}",
+                f"Scheduled run error (attempt {retry_count}/{MAX_RETRIES}): {e}",
                 file=sys.stderr,
             )
             if retry_count >= MAX_RETRIES:
                 print("Scheduled run: Max retries reached, aborting...", file=sys.stderr)
                 break
             await asyncio.sleep(RETRY_DELAY)
-        except Exception as e:
-            print(f"Scheduled run: Unexpected error: {e}", file=sys.stderr)
-            break
 
     if not featured:
-        await send_message("I wasn't able to feature an album this hour. I'll try again next hour!")
+        await send_message("Failed to feature an album.")
 
     if datetime.now().hour == LAST_FEATURE_HOUR:
         await send_goodnight_message()
