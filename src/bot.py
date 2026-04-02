@@ -212,9 +212,17 @@ async def scheduled_feature():
     while retry_count < MAX_RETRIES:
         try:
             (featured_album, print_buffer) = main.main()
-            if featured_album is None:  # non-retryable error
-                print("Scheduled run: Failed to feature an album", file=sys.stderr)
-                break
+            if featured_album is None:
+                retry_count += 1
+                print(
+                    f"Scheduled run error (attempt {retry_count}/{MAX_RETRIES}): user has no top albums?",
+                    file=sys.stderr,
+                )
+                if retry_count >= MAX_RETRIES:
+                    print("Scheduled run: Max retries reached, aborting...", file=sys.stderr)
+                    break
+                await asyncio.sleep(RETRY_DELAY)
+                continue
 
             print(print_buffer)
             await do_feature(featured_album)
