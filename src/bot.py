@@ -3,7 +3,7 @@ import io
 import os
 import socket
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 import discord
 import dotenv
@@ -21,7 +21,11 @@ RETRY_DELAY = 2
 dotenv.load_dotenv()
 token = os.environ.get("DISCORD_TOKEN")
 notify_channel_id = os.environ.get("NOTIFY_CHANNEL_ID")
+listening_party_channel_id = os.environ.get("LISTENING_PARTY_CHANNEL_ID")
 dues_payer_role_id = os.environ.get("DUES_PAYER_ROLE_ID")
+listening_party_role_id = os.environ.get("LISTENING_PARTY_ROLE_ID")
+
+last_ping_use = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 # use discord.py to create frontend interface through discord
 intents = discord.Intents.default()
@@ -384,7 +388,7 @@ async def on_message(message):
             )
 
     elif message.content.startswith("!help"):
-        help_text = """**PVC Last.fm Bot Commands**
+        help_text = f"""**PVC Last.fm Bot Commands**
 
 **Connection:**
 `!connect <lastfm_username>` - Connect your Discord account to your Last.fm account
@@ -400,6 +404,9 @@ async def on_message(message):
 `!f` - Show the most recently featured album
 `!featuredlog [username]` - View your featured album history (or someone else's)
 `!help` - Show this help message
+
+**Other:**
+`!ping [message]` - Ping users in <#{listening_party_channel_id}> with a message (for hosting listening parties)
 
 **How it works:**
 The bot randomly features albums from users' Last.fm top albums every hour and scrobbles a random track from the selected album.
@@ -453,6 +460,33 @@ Check out the complete history of all featured albums at https://last.fm/user/pu
 
         # format album_details as embed
         await message.channel.send(embed=formatter.featured_embed(album_details))
+
+    elif message.content.startswith("!ping"):
+        global last_ping_use
+
+        if str(message.channel.id) != listening_party_channel_id:
+            await message.channel.send(
+                f"This command is only useable in <#{listening_party_channel_id}> once every 24 hours."
+            )
+            return
+
+        if datetime.now() - last_ping_use.replace(tzinfo=None) < timedelta(hours=24):
+            timestamp = int((last_ping_use + timedelta(hours=24)).timestamp())
+            await message.channel.send(f"This command will be useable <t:{timestamp}:R>")
+
+            return
+
+        parts = message.content.split()
+        if len(parts) == 1:
+            await message.channel.send(
+                "Use this command by sending `!ping YOUR MESSAGE`, to ping the listening party role with a message."
+            )
+            return
+
+        user_message = " ".join(parts[1:])
+
+        last_ping_use = datetime.now()
+        await message.channel.send(f"<@&{listening_party_role_id}> {user_message}")
 
     elif message.content.startswith("!settings"):
         preferences = db.get_preferences(message.author.id)
