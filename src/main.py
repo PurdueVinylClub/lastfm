@@ -56,7 +56,10 @@ def main() -> tuple[dict | None, str]:
 
     response = requests.get(topalbums_url)
     if response.status_code != 200:
-        print(f"Error fetching top albums: HTTP {response.status_code}", file=sys.stderr)
+        print(
+            f"Error fetching top albums for {username}: HTTP {response.status_code}",
+            file=sys.stderr,
+        )
         return None, ""
     data = json.loads(response.text)
 
