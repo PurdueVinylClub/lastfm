@@ -64,17 +64,17 @@ def main() -> tuple[dict | None, str]:
     data = json.loads(response.text)
 
     if "topalbums" not in data:
-        print(f"Error: No topalbums in response: {data}", file=sys.stderr)
+        print(f"Error: No topalbums in response for {username}: {data}", file=sys.stderr)
         return None, ""
 
     if "album" not in data["topalbums"] or not isinstance(data["topalbums"]["album"], list):
-        print("Error: No albums found in API response", file=sys.stderr)
+        print(f"Error: No albums found in API response for {username}", file=sys.stderr)
         return None, ""
 
     top_albums = data["topalbums"]["album"][0:15]
 
     if len(top_albums) == 0:
-        print("Error: User has no top albums", file=sys.stderr)
+        print(f"Error: {username} has no top albums", file=sys.stderr)
         return None, ""
 
     # get random album
