@@ -21,6 +21,12 @@ DATA_DIR = Path(os.environ.get("PVC_DATA_DIR", "./data"))
 DATA_DIR.mkdir(exist_ok=True)
 
 
+def lastfm_api_sign(params: dict[str, str], secret: str) -> str:
+    """Last.fm API signature: md5 of sorted key/value pairs followed by the secret."""
+    raw = "".join(f"{k}{params[k]}" for k in sorted(params)) + secret
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()
+
+
 def main() -> tuple[dict | None, str]:
     """Main function to feature an album and scrobble a track."""
     db.init()  # connect to database (if not already)
@@ -141,10 +147,11 @@ def main() -> tuple[dict | None, str]:
 
         time_now = int(time.time())
 
-        # print random track
-        random_track = random.choice(list(data["album"]["tracks"]["track"]))
-        scrobble_sig = ""
-        if "name" in random_track:
+        tracks = data["album"]["tracks"]["track"]
+        if isinstance(tracks, dict):
+            tracks = [tracks]
+        random_track = random.choice(tracks)
+        if isinstance(random_track, dict) and "name" in random_track:
             track_name: str = random_track["name"]
         elif isinstance(random_track, str):
             track_name = random_track
@@ -153,25 +160,22 @@ def main() -> tuple[dict | None, str]:
             return None, ""
 
         print_buffer += f" {track_name}"
-        scrobble_sig += f"api_key{API_KEY}artist{random_album['artist']['name']}methodtrack.scrobblesk{SESSION_KEY}timestamp{time_now}track{track_name}"
 
-        # construct sig to scrobble track
-        scrobble_sig += SECRET
-        scrobble_sig = scrobble_sig.encode("utf-8")
-        scrobble_sig = hashlib.md5(scrobble_sig).hexdigest()
-
-        # scrobble track
-        scrobble_url = "https://ws.audioscrobbler.com/2.0/"
-        post_body = {
+        params = {
             "method": "track.scrobble",
             "api_key": API_KEY,
             "artist": random_album["artist"]["name"],
             "track": track_name,
-            "timestamp": time_now,
+            "album": random_album["name"],
+            "timestamp": str(time_now),
             "sk": SESSION_KEY,
-            "api_sig": scrobble_sig,
-            "format": "json",
         }
+        album_artist = data["album"].get("artist")
+        if isinstance(album_artist, str) and album_artist:
+            params["albumArtist"] = album_artist
+
+        scrobble_url = "https://ws.audioscrobbler.com/2.0/"
+        post_body = {**params, "api_sig": lastfm_api_sign(params, SECRET), "format": "json"}
         response = requests.post(scrobble_url, data=post_body)
         if response.status_code != 200:
             print(
