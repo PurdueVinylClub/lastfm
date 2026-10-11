@@ -9,7 +9,7 @@ Database structure:
 import os
 import random
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from pathlib import Path
 
@@ -21,7 +21,7 @@ DB_PATH = DATA_DIR / "pvc.db"
 
 
 @contextmanager
-def get_connection() -> Iterator[sqlite3.Connection]:
+def get_connection() -> Generator[sqlite3.Connection]:
     """Get a database connection. Creates a fresh connection per operation."""
     conn = sqlite3.connect(str(DB_PATH))
     conn.row_factory = sqlite3.Row
